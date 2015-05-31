@@ -10,6 +10,8 @@ The git of Google JsonNet:  https://github.com/google/jsonnet
 
 ### Install Jsonnet for PHP
 ```
+The pecl package is :  http://pecl.php.net/package/jsonnet
+
 pecl install jsonnet
 ```
 
