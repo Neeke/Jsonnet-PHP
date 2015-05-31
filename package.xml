@@ -41,7 +41,7 @@
             <file role="src" name="EXPERIMENTAL" />
             <file role="src" name="php_jsonnet.h" />
             <file role="src" name="jsonnet.c" />
-            <dir name="tests">
+            <dir name="test">
                 <file role="src" name="bar_menu.1.jsonnet" />
                 <file role="src" name="bar_menu.2.jsonnet" />
                 <file role="src" name="bar_menu.3.jsonnet" />
