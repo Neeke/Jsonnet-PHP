@@ -53,9 +53,12 @@ AC_DEFUN([AC_JSONNET_EPOLL],
 ])
 
 if test "$PHP_JSONNET" != "no"; then
+  cd libjsonnet
+  make libjsonnet.so
+  cd ../
 
   # --with-jsonnet -> check with-path
-  SEARCH_PATH="libjsonnet"
+  SEARCH_PATH="/usr/lib/jsonnet"
   SEARCH_FOR="libjsonnet.h"
   if test -r $PHP_JSONNET/$SEARCH_FOR; then # path given as parameter
     JSONNET_DIR=$PHP_JSONNET
@@ -81,7 +84,7 @@ if test "$PHP_JSONNET" != "no"; then
 
     PHP_ADD_INCLUDE($JSONNET_DIR)
     PHP_EVAL_LIBLINE($JSONNET_DIR, JSONNET_SHARED_LIBADD)
-    PHP_ADD_LIBRARY_WITH_PATH(libjsonnet, $JSONNET_DIR, JSONNET_SHARED_LIBADD)
+    PHP_ADD_LIBRARY_WITH_PATH(jsonnet, $JSONNET_DIR, JSONNET_SHARED_LIBADD)
 
     AC_JSONNET_EPOLL()
 

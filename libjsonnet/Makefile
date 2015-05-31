@@ -79,6 +79,9 @@ jsonnet: jsonnet.cpp $(LIB_OBJ)
 # C binding.
 libjsonnet.so: $(LIB_OBJ)
 	$(CXX) $(LDFLAGS) $(LIB_OBJ) $(SHARED_LDFLAGS) -o $@
+	mkdir -p /usr/lib/jsonnet
+	cp -rf libjsonnet.h  /usr/lib/jsonnet
+	cp -rf libjsonnet.so /usr/lib/jsonnet
 
 # Javascript build of C binding
 libjsonnet.js: $(LIB_SRC) $(ALL_HEADERS)

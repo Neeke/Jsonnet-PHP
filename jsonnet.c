@@ -22,9 +22,8 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "ext/standard/file.h"
+#include "ext/json/php_json.h"
 #include "php_jsonnet.h"
-#include "zend_extensions.h"
-#include <sys/resource.h>
 #include <stdlib.h>
 
 #ifdef PHP_WIN32
@@ -53,7 +52,8 @@ const zend_function_entry jsonnet_methods[] = {
         PHP_ME(JSONNET_RES_NAME, __construct,   NULL, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
         PHP_ME(JSONNET_RES_NAME, __destruct,    NULL, ZEND_ACC_PUBLIC | ZEND_ACC_DTOR)
 
-        PHP_ME(JSONNET_RES_NAME, evaluateFile,   NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+        PHP_ME(JSONNET_RES_NAME, evaluateFile,      NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+        PHP_ME(JSONNET_RES_NAME, evaluateSnippet,   NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 
         {NULL, NULL, NULL}
 };
@@ -104,9 +104,6 @@ PHP_MINIT_FUNCTION(jsonnet)
     jsonnet_ce = zend_register_internal_class_ex(&jsonnet, NULL, NULL TSRMLS_CC);
     jsonnet_ce->ce_flags = ZEND_ACC_IMPLICIT_PUBLIC;
 
-//    zend_declare_property_null(jsonnet_ce, ZEND_STRL(JSONNET_BUFFER_NAME), ZEND_ACC_STATIC TSRMLS_CC);
-//    zend_declare_property_null(jsonnet_ce, ZEND_STRL(JSONNET_BUFFER_SIZE_NAME), ZEND_ACC_STATIC TSRMLS_CC);
-
     return SUCCESS;
 }
 
@@ -119,16 +116,11 @@ PHP_MSHUTDOWN_FUNCTION(jsonnet)
 
 PHP_RINIT_FUNCTION(jsonnet)
 {
-//    jsonnet_init_logger(TSRMLS_C);
-//    jsonnet_init_buffer(TSRMLS_C);
-
     return SUCCESS;
 }
 
 PHP_RSHUTDOWN_FUNCTION(jsonnet)
 {
-//    jsonnet_shutdown_buffer(TSRMLS_C);
-
     return SUCCESS;
 }
 
@@ -148,31 +140,30 @@ PHP_MINFO_FUNCTION(jsonnet)
 
 PHP_FUNCTION(jsonnet_get_version)
 {
-    char *str;
-    int len = 0;
-    len = spprintf(&str, 0, "%s", JSONNET_PHP_VERSION);
+    zval *str;
+    MAKE_STD_ZVAL(str);
+    ZVAL_STRING(str,JSONNET_PHP_VERSION,1);
 
-    RETURN_STRINGL(str, len, 0);
+    RETURN_STRINGL(Z_STRVAL_P(str), Z_STRLEN_P(str), 0);
 }
 
 PHP_FUNCTION(jsonnet_get_author)
 {
-    char *str;
-    int len = 0;
-    len = spprintf(&str, 0, "%s", JSONNET_PHP_AUTHOR);
+    zval *str;
+    MAKE_STD_ZVAL(str);
+    ZVAL_STRING(str,JSONNET_PHP_AUTHOR,1);
 
-    RETURN_STRINGL(str, len, 0);
+    RETURN_STRINGL(Z_STRVAL_P(str), Z_STRLEN_P(str), 0);
 }
 
 PHP_METHOD(JSONNET_RES_NAME, __construct)
 {
-//    jsonnet_init_logger(TSRMLS_C);
-//    jsonnet_init_buffer(TSRMLS_C);
+
 }
 
 PHP_METHOD(JSONNET_RES_NAME, __destruct)
 {
-//    jsonnet_shutdown_buffer(TSRMLS_C);
+
 }
 
 PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
@@ -184,27 +175,100 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
     if (zend_parse_parameters(argc TSRMLS_CC, "s", &_file_path, &_file_path_len) == FAILURE)
         return;
 
-    if (argc > 0) {
-            int error;
-            char *output;
-            struct JsonnetVm *vm;
+    if (argc > 0 && _file_path_len > 0) {
+        int error;
+        char *output;
+        struct JsonnetVm *vm;
 
-            vm = jsonnet_make();
-            output = jsonnet_evaluate_file(vm, _file_path, &error);
-            if (error) {
-                fprintf(stderr, "%s", output);
-                jsonnet_realloc(vm, output, 0);
-                jsonnet_destroy(vm);
-                RETURN_FALSE;
-            }
-            printf("%s", output);
+        vm = jsonnet_make();
+        output = jsonnet_evaluate_file(vm, _file_path, &error);
+        if (error) {
+            zval *err;
+            MAKE_STD_ZVAL(err);
+            ZVAL_STRING(err,output,1);
+
             jsonnet_realloc(vm, output, 0);
             jsonnet_destroy(vm);
 
-        RETURN_TRUE;
+            zend_throw_exception(php_com_exception_class_entry, Z_STRVAL_P(err), CODE_ERROR TSRMLS_CC);
+            RETURN_FALSE;
+        }
+
+        zval *result;
+        MAKE_STD_ZVAL(result);
+        ZVAL_STRING(result,output,1);
+
+        jsonnet_realloc(vm, output, 0);
+        jsonnet_destroy(vm);
+
+        zval *resultZval;
+        MAKE_STD_ZVAL(resultZval);
+        php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
+        zval_dtor(result);
+
+        if(Z_TYPE_P(resultZval) == IS_NULL){
+            zval_dtor(resultZval);
+            zend_throw_exception(php_com_exception_class_entry, "JsonNet #error", CODE_ERROR TSRMLS_CC);
+            return;
+        }
+
+        RETURN_ZVAL(resultZval,1,0);
     }
 
-    RETURN_FALSE;
+    zend_throw_exception(php_com_exception_class_entry, "JsonNet::evaluateFile('filePath'), filePath is null", CODE_ERROR TSRMLS_CC);
+}
+
+PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
+{
+    char *_snippet_string = NULL;
+    int argc = ZEND_NUM_ARGS();
+    int _snippet_string_len;
+
+    if (zend_parse_parameters(argc TSRMLS_CC, "s", &_snippet_string, &_snippet_string_len) == FAILURE)
+        return;
+
+    if (argc > 0 && _snippet_string_len > 0) {
+        int error;
+        char *output;
+        struct JsonnetVm *vm;
+
+        vm = jsonnet_make();
+        output = jsonnet_evaluate_snippet(vm, "snippet", _snippet_string, &error);
+        if (error) {
+            zval *err;
+            MAKE_STD_ZVAL(err);
+            ZVAL_STRING(err,output,1);
+
+            jsonnet_realloc(vm, output, 0);
+            jsonnet_destroy(vm);
+
+            zend_throw_exception(php_com_exception_class_entry, Z_STRVAL_P(err), CODE_ERROR TSRMLS_CC);
+            RETURN_FALSE;
+        }
+
+        zval *result;
+        MAKE_STD_ZVAL(result);
+        ZVAL_STRING(result,output,1);
+
+        jsonnet_realloc(vm, output, 0);
+        jsonnet_destroy(vm);
+
+        zval *resultZval;
+        MAKE_STD_ZVAL(resultZval);
+        php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
+        zval_dtor(result);
+
+        if(Z_TYPE_P(resultZval) == IS_NULL){
+            zval_dtor(resultZval);
+            zend_throw_exception(php_com_exception_class_entry, "JsonNet #error", CODE_ERROR TSRMLS_CC);
+            return;
+        }
+
+        RETURN_ZVAL(resultZval,1,0);
+
+    }
+
+    zend_throw_exception(php_com_exception_class_entry, "JsonNet::evaluateSnippet('string'), string is null", CODE_ERROR TSRMLS_CC);
 }
 
 /*
