@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.9.4" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+    <name>JsonNet</name>
+    <channel>pecl.php.net</channel>
+    <summary>The Google JsonNet for PHP.</summary>
+    <description>
+        The Google JsonNet for PHP.
+
+        Jsonnet language, from its most basic features to its powerful object model, punctuated with examples drawn from the world of cocktails. These examples are meant to be fun, and although a little contrived, do not restrict our thinking to any one particular application of Jsonnet.
+
+        Caveat: Note that Jsonnet unparses JSON in a simple way. In particular, it alphabetically reorders object fields in its output. This is natural and compatible with JSON, since if order is meaningful, an array of pairs should be used instead of an object. Also, unparsing JSON using a canonical ordering of field names makes it possible to use diff to compare outputs. However, the example output on this page has been manually re-ordered in order to allow easier visual comparison to the given input. The whitespace of the output has also been tweaked to make it fit more neatly on the page. So, if you run these examples yourself, the output might be different (but equivalent).
+    </description>
+    <lead>
+        <name>Chitao Gao</name>
+        <user>neeke</user>
+        <email>neeke@php.net</email>
+        <active>yes</active>
+    </lead>
+    <date>2015-05-31</date>
+    <time>17:00:00</time>
+    <version>
+        <release>1.0.0</release>
+        <api>1.0.0</api>
+    </version>
+    <stability>
+        <release>stable</release>
+        <api>stable</api>
+    </stability>
+    <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
+    <notes>
+        - First version.
+    </notes>
+    <contents>
+        <dir name="/">
+            <file role="doc" name="CREDITS" />
+            <file role="doc" name="README.md" />
+            <file role="doc" name="LICENSE" />
+            <file role="src" name="config.m4" />
+            <file role="src" name="config.w32" />
+            <file role="src" name="CREDITS" />
+            <file role="src" name="EXPERIMENTAL" />
+            <file role="src" name="php_jsonnet.h" />
+            <file role="src" name="jsonnet.c" />
+            <dir name="tests">
+                <file role="src" name="bar_menu.1.jsonnet" />
+                <file role="src" name="bar_menu.2.jsonnet" />
+                <file role="src" name="bar_menu.3.jsonnet" />
+                <file role="src" name="bar_menu.5.jsonnet" />
+                <file role="src" name="bar_menu.6.jsonnet" />
+                <file role="src" name="martinis.jsonnet" />
+                <file role="src" name="test.jsonnet.php" />
+            </dir>
+            <dir name="libjsonnet">
+                <file role="src" name="_jsonnet.c"/>
+                <file role="src" name="ast.h"/>
+                <file role="src" name="jsonnet.cpp"/>
+                <file role="src" name="lexer.cpp"/>
+                <file role="src" name="lexer.h"/>
+                <file role="src" name="libjsonnet.cpp"/>
+                <file role="src" name="libjsonnet.h"/>
+                <file role="src" name="libjsonnet_test_file.c"/>
+                <file role="src" name="libjsonnet_test_snippet.c"/>
+                <file role="src" name="LICENSE"/>
+                <file role="src" name="Makefile"/>
+                <file role="src" name="parser.cpp"/>
+                <file role="src" name="parser.h"/>
+                <file role="src" name="README"/>
+                <file role="src" name="state.h"/>
+                <file role="src" name="static_analysis.cpp"/>
+                <file role="src" name="static_analysis.h"/>
+                <file role="src" name="static_error.h"/>
+                <file role="src" name="std.jsonnet"/>
+                <file role="src" name="vm.cpp"/>
+                <file role="src" name="vm.h"/>
+            </dir>
+        </dir>
+    </contents>
+    <dependencies>
+        <required>
+            <php>
+                <min>5.2.0</min>
+            </php>
+            <pearinstaller>
+                <min>1.4.0</min>
+            </pearinstaller>
+        </required>
+    </dependencies>
+    <providesextension>jsonnet</providesextension>
+    <extsrcrelease />
+    <changelog>
+        <release>
+            <date>2015-05-31</date>
+            <time>17:00:00</time>
+            <version>
+                <release>1.0.0</release>
+                <api>1.0.0</api>
+            </version>
+            <stability>
+                <release>stable</release>
+                <api>stable</api>
+            </stability>
+            <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
+            <notes>
+                - First version.
+            </notes>
+        </release>
+    </changelog>
+</package>
