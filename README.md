@@ -12,7 +12,19 @@ The git of Google JsonNet:  https://github.com/google/jsonnet
 ```
 The pecl package is :  http://pecl.php.net/package/jsonnet
 
-pecl install jsonnet
+    pecl install jsonnet
+
+or
+
+
+    wget -O JsonNet.Latest.tar.gz https://pecl.php.net/get/jsonnet
+    mkdir JsonNet-PHP && tar -xzvf JsonNet.Latest.tar.gz -C ./JsonNet-PHP
+    cd JsonNet-PHP/JsonNet-1.0.0
+
+    phpize
+    ./configure
+    make && make install
+
 ```
 
 
