@@ -22,7 +22,10 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "ext/standard/file.h"
+#include "ext/standard/url.h"
+#include "ext/standard/php_string.h"
 #include "ext/json/php_json.h"
+#include "Zend/zend_exceptions.h"
 #include "php_jsonnet.h"
 #include <stdlib.h>
 
@@ -179,9 +182,14 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
         int error;
         char *output;
         struct JsonnetVm *vm;
-
+        int output_len, tmp_len, replace_count;
         vm = jsonnet_make();
         output = jsonnet_evaluate_file(vm, _file_path, &error);
+        output_len = strlen(output);
+
+        /**
+         * tihuan
+         */
         if (error) {
             zval *err;
             MAKE_STD_ZVAL(err);
@@ -194,9 +202,12 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
             RETURN_FALSE;
         }
 
+        char *new_output = php_str_to_str_ex(output, output_len, "\\u00", strlen("\\u00") , "%", 1, &tmp_len, 0, &replace_count);
+        php_url_decode(new_output, tmp_len);
+
         zval *result;
         MAKE_STD_ZVAL(result);
-        ZVAL_STRING(result,output,1);
+        ZVAL_STRING(result, new_output, 1);
 
         jsonnet_realloc(vm, output, 0);
         jsonnet_destroy(vm);
@@ -205,7 +216,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
         MAKE_STD_ZVAL(resultZval);
         php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
         zval_dtor(result);
-
+        efree(new_output);
         if(Z_TYPE_P(resultZval) == IS_NULL){
             zval_dtor(resultZval);
             zend_throw_exception(php_com_exception_class_entry, "JsonNet #error", CODE_ERROR TSRMLS_CC);
@@ -231,9 +242,12 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
         int error;
         char *output;
         struct JsonnetVm *vm;
+        int output_len, tmp_len, replace_count;
 
         vm = jsonnet_make();
         output = jsonnet_evaluate_snippet(vm, "snippet", _snippet_string, &error);
+        output_len = strlen(output);
+
         if (error) {
             zval *err;
             MAKE_STD_ZVAL(err);
@@ -246,9 +260,12 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
             RETURN_FALSE;
         }
 
+        char *new_output = php_str_to_str_ex(output, output_len, "\\u00", strlen("\\u00") , "%", 1, &tmp_len, 0, &replace_count);
+        php_url_decode(new_output, tmp_len);
+
         zval *result;
         MAKE_STD_ZVAL(result);
-        ZVAL_STRING(result,output,1);
+        ZVAL_STRING(result, new_output, 1);
 
         jsonnet_realloc(vm, output, 0);
         jsonnet_destroy(vm);
@@ -257,6 +274,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
         MAKE_STD_ZVAL(resultZval);
         php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
         zval_dtor(result);
+        efree(new_output);
 
         if(Z_TYPE_P(resultZval) == IS_NULL){
             zval_dtor(resultZval);
