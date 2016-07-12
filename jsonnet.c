@@ -182,7 +182,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
         int error;
         char *output;
         struct JsonnetVm *vm;
-        int output_len, tmp_len, replace_count;
+        int output_len, new_output_len, plus_output_len, replace_count;
         vm = jsonnet_make();
         output = jsonnet_evaluate_file(vm, _file_path, &error);
         output_len = strlen(output);
@@ -202,8 +202,11 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
             RETURN_FALSE;
         }
 
-        char *new_output = php_str_to_str_ex(output, output_len, "\\u00", strlen("\\u00") , "%", 1, &tmp_len, 0, &replace_count);
-        php_url_decode(new_output, tmp_len);
+        char *plus_output = php_str_to_str_ex(output, output_len, "+", strlen("+") , "%2B", 3, &plus_output_len, 0, &replace_count);
+        char *new_output = php_str_to_str_ex(plus_output, plus_output_len, "\\u00", strlen("\\u00") , "%", 1, &new_output_len, 0, &replace_count);
+
+        php_url_decode(new_output, new_output_len);
+        php_log_err(new_output);
 
         zval *result;
         MAKE_STD_ZVAL(result);
@@ -217,6 +220,8 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
         php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
         zval_dtor(result);
         efree(new_output);
+        efree(plus_output);
+
         if(Z_TYPE_P(resultZval) == IS_NULL){
             zval_dtor(resultZval);
             zend_throw_exception(php_com_exception_class_entry, "JsonNet #error", CODE_ERROR TSRMLS_CC);
@@ -242,7 +247,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
         int error;
         char *output;
         struct JsonnetVm *vm;
-        int output_len, tmp_len, replace_count;
+        int output_len, new_output_len, plus_output_len, replace_count;
 
         vm = jsonnet_make();
         output = jsonnet_evaluate_snippet(vm, "snippet", _snippet_string, &error);
@@ -260,8 +265,9 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
             RETURN_FALSE;
         }
 
-        char *new_output = php_str_to_str_ex(output, output_len, "\\u00", strlen("\\u00") , "%", 1, &tmp_len, 0, &replace_count);
-        php_url_decode(new_output, tmp_len);
+        char *plus_output = php_str_to_str_ex(output, output_len, "+", strlen("+") , "%2B", 3, &plus_output_len, 0, &replace_count);
+        char *new_output = php_str_to_str_ex(plus_output, plus_output_len, "\\u00", strlen("\\u00") , "%", 1, &new_output_len, 0, &replace_count);
+        php_url_decode(new_output, new_output_len);
 
         zval *result;
         MAKE_STD_ZVAL(result);
@@ -275,6 +281,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
         php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
         zval_dtor(result);
         efree(new_output);
+        efree(plus_output);
 
         if(Z_TYPE_P(resultZval) == IS_NULL){
             zval_dtor(resultZval);
