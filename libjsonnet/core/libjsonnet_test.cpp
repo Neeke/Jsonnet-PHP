@@ -14,30 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <stdlib.h>
-#include <stdio.h>
+extern "C" {
+    #include "libjsonnet.h"
+}
 
-#include "libjsonnet.h"
+#include "gtest/gtest.h"
 
-int main(int argc, const char **argv)
+TEST(JsonnetTest, TestEvaluateSnippet)
 {
-    int error;
-    char *output;
-    struct JsonnetVm *vm;
-    if (argc != 2) {
-        fprintf(stderr, "libjsonnet_test_snippet <string>\n");
-        return EXIT_FAILURE;
-    }
-    vm = jsonnet_make();
-    output = jsonnet_evaluate_snippet(vm, "snippet", argv[1], &error);
-    if (error) {
-        fprintf(stderr, "%s", output);
-        jsonnet_realloc(vm, output, 0);
-        jsonnet_destroy(vm);
-        return EXIT_FAILURE;
-    } 
-    printf("%s", output);
+    const char* snippet = "std.assertEqual(({ x: 1, y: self.x } { x: 2 }).y, 2)";
+    struct JsonnetVm* vm = jsonnet_make();
+    ASSERT_FALSE(vm == nullptr);
+    int error = 0;
+    char* output = jsonnet_evaluate_snippet(vm, "snippet", snippet, &error);
+    EXPECT_EQ(0, error);
     jsonnet_realloc(vm, output, 0);
     jsonnet_destroy(vm);
-    return EXIT_SUCCESS;
 }

@@ -17,6 +17,9 @@ limitations under the License.
 #ifndef JSONNET_STATIC_ERROR_H
 #define JSONNET_STATIC_ERROR_H
 
+#include <iostream>
+#include <sstream>
+
 struct Location {
     unsigned long line;
     unsigned long column;
@@ -91,15 +94,22 @@ struct StaticError {
       : location(location), msg(msg)
     {
     }
+
+    std::string toString() const
+    {
+        std::stringstream ss;
+        if (location.isSet()) {
+            ss << location << ":";
+        }
+        ss << " " << msg;
+        return ss.str();
+    }
 };
 
 static inline std::ostream &operator<<(std::ostream &o, const StaticError &err)
 {
-    if (err.location.isSet()) {
-        o << err.location << ":";
-    }
-    o << " " << err.msg;
+    o << err.toString();
     return o;
 }
 
-#endif
+#endif  // JSONNET_ERROR_H

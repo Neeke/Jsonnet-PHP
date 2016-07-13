@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-###################################################################################################
+################################################################################
 # User-servicable parts:
-###################################################################################################
+################################################################################
 
 # C/C++ compiler -- clang also works
 CXX ?= g++
@@ -26,94 +26,141 @@ EMCC ?= emcc
 
 CP ?= cp
 OD ?= od
-PYTHON ?= python
 
-CXXFLAGS ?= -g -O3 -Wall -Wextra -pedantic -std=c++0x -fPIC
-CFLAGS ?= -g -O3 -Wall -Wextra -pedantic -std=c99 -fPIC
+OPT ?= -O3
+
+CXXFLAGS ?= -g $(OPT) -Wall -Wextra -Woverloaded-virtual -pedantic -std=c++0x -fPIC -Iinclude
+CFLAGS ?= -g $(OPT) -Wall -Wextra -pedantic -std=c99 -fPIC -Iinclude
 EMCXXFLAGS = $(CXXFLAGS) --memory-init-file 0 -s DISABLE_EXCEPTION_CATCHING=0
 EMCFLAGS = $(CFLAGS) --memory-init-file 0 -s DISABLE_EXCEPTION_CATCHING=0
 LDFLAGS ?=
 
-PYTHON_CFLAGS ?= `python-config --includes`
-PYTHON_LDFLAGS ?= `python-config --ldflags --libs`
-
 SHARED_LDFLAGS ?= -shared
 
-###################################################################################################
+################################################################################
 # End of user-servicable parts
-###################################################################################################
+################################################################################
 
-LIB_SRC = lexer.cpp parser.cpp static_analysis.cpp vm.cpp libjsonnet.cpp
+LIB_SRC = \
+	core/desugarer.cpp \
+	core/formatter.cpp \
+	core/lexer.cpp \
+	core/libjsonnet.cpp \
+	core/parser.cpp \
+	core/static_analysis.cpp \
+	core/string_utils.cpp \
+	core/vm.cpp
+
 LIB_OBJ = $(LIB_SRC:.cpp=.o)
 
-ALL = jsonnet libjsonnet.so libjsonnet_test_snippet libjsonnet_test_file _jsonnet.so libjsonnet.js doc/libjsonnet.js $(LIB_OBJ)
-ALL_HEADERS = libjsonnet.h vm.h static_analysis.h parser.h lexer.h ast.h static_error.h state.h std.jsonnet.h
+LIB_CPP_SRC = \
+	cpp/libjsonnet++.cpp
+
+LIB_CPP_OBJ = $(LIB_OBJ) $(LIB_CPP_SRC:.cpp=.o)
+
+ALL = \
+	jsonnet \
+	libjsonnet.so \
+	libjsonnet++.so \
+	libjsonnet_test_snippet \
+	libjsonnet_test_file \
+	libjsonnet.js \
+	doc/js/libjsonnet.js \
+	$(LIB_OBJ)
+
+ALL_HEADERS = \
+	core/ast.h \
+	core/desugarer.h \
+	core/formatter.h \
+	core/lexer.h \
+	core/parser.h \
+	core/state.h \
+	core/static_analysis.h \
+	core/static_error.h \
+	core/string_utils.h \
+	core/vm.h \
+	core/std.jsonnet.h \
+	include/libjsonnet.h \
+	include/libjsonnet++.h
 
 default: jsonnet
 
 all: $(ALL)
 
 TEST_SNIPPET = "std.assertEqual(({ x: 1, y: self.x } { x: 2 }).y, 2)"
-test: jsonnet libjsonnet.so libjsonnet_test_snippet libjsonnet_test_file _jsonnet.so
+test: jsonnet libjsonnet.so libjsonnet_test_snippet libjsonnet_test_file
 	./jsonnet -e $(TEST_SNIPPET)
 	LD_LIBRARY_PATH=. ./libjsonnet_test_snippet $(TEST_SNIPPET)
 	LD_LIBRARY_PATH=. ./libjsonnet_test_file "test_suite/object.jsonnet"
-	$(PYTHON) jsonnet_test_snippet.py $(TEST_SNIPPET)
-	$(PYTHON) jsonnet_test_file.py "test_suite/object.jsonnet"
 	cd examples ; ./check.sh
+	cd examples/terraform ; ./check.sh
 	cd test_suite ; ./run_tests.sh
+	cd test_suite ; ./run_fmt_tests.sh
+
+MAKEDEPEND_SRCS = \
+	cmd/jsonnet.cpp \
+	core/libjsonnet_test_snippet.c \
+	core/libjsonnet_test_file.c
 
 depend:
-	makedepend -f- $(LIB_SRC) jsonnet.cpp _jsonnet.c libjsonnet_test_snippet.c libjsonnet_test_file.c _jsonnet.c > Makefile.depend 
+	makedepend -f- $(LIB_SRC) $(MAKEDEPEND_SRCS) > Makefile.depend
 
-parser.cpp: std.jsonnet.h
+core/desugarer.cpp: core/std.jsonnet.h
 
 # Object files
 %.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 # Commandline executable.
-jsonnet: jsonnet.cpp $(LIB_OBJ)
+jsonnet: cmd/jsonnet.cpp $(LIB_OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $< $(LIB_SRC:.cpp=.o) -o $@
 
 # C binding.
 libjsonnet.so: $(LIB_OBJ)
 	$(CXX) $(LDFLAGS) $(LIB_OBJ) $(SHARED_LDFLAGS) -o $@
 	mkdir -p /usr/lib/jsonnet
-	cp -rf libjsonnet.h  /usr/lib/jsonnet
+	cp -rf include/libjsonnet.h  /usr/lib/jsonnet
 	cp -rf libjsonnet.so /usr/lib/jsonnet
 
+libjsonnet++.so: $(LIB_CPP_OBJ)
+	$(CXX) $(LDFLAGS) $(LIB_CPP_OBJ) $(SHARED_LDFLAGS) -o $@
+
 # Javascript build of C binding
+JS_EXPORTED_FUNCTIONS = 'EXPORTED_FUNCTIONS=["_jsonnet_make", "_jsonnet_evaluate_snippet", "_jsonnet_realloc", "_jsonnet_destroy"]'
+
 libjsonnet.js: $(LIB_SRC) $(ALL_HEADERS)
-	$(EMCXX) -s 'EXPORTED_FUNCTIONS=["_jsonnet_make", "_jsonnet_evaluate_snippet", "_jsonnet_realloc", "_jsonnet_destroy"]' $(EMCXXFLAGS) $(LDFLAGS) $(LIB_SRC) -o $@
+	$(EMCXX) -s $(JS_EXPORTED_FUNCTIONS) $(EMCXXFLAGS) $(LDFLAGS) $(LIB_SRC) -o $@
 
 # Copy javascript build to doc directory
-doc/libjsonnet.js: libjsonnet.js
+doc/js/libjsonnet.js: libjsonnet.js
 	$(CP) $^ $@
 
 # Tests for C binding.
-libjsonnet_test_snippet: libjsonnet_test_snippet.c libjsonnet.so libjsonnet.h
+LIBJSONNET_TEST_SNIPPET_SRCS = \
+	core/libjsonnet_test_snippet.c \
+	libjsonnet.so \
+	include/libjsonnet.h
+
+libjsonnet_test_snippet: $(LIBJSONNET_TEST_SNIPPET_SRCS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $< -L. -ljsonnet -o $@
 
-libjsonnet_test_file: libjsonnet_test_file.c libjsonnet.so libjsonnet.h
+LIBJSONNET_TEST_FILE_SRCS = \
+	core/libjsonnet_test_file.c \
+	libjsonnet.so \
+	include/libjsonnet.h
+
+libjsonnet_test_file: $(LIBJSONNET_TEST_FILE_SRCS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $< -L. -ljsonnet -o $@
-
-# Python binding.
-_jsonnet.o: _jsonnet.c
-	$(CC) $(CFLAGS) $(PYTHON_CFLAGS) $< -c -o $@
-
-_jsonnet.so: _jsonnet.o $(LIB_OBJ)
-	$(CXX) $(LDFLAGS) $(LIB_OBJ) $< $(SHARED_LDFLAGS) $(PYTHON_LDFLAGS) -o $@
 
 # Encode standard library for embedding in C
-%.jsonnet.h: %.jsonnet
-	(($(OD) -v -Anone -t u1 $< | tr " " "\n" | grep -v "^$$" | tr "\n" "," ) && echo "0") > $@
+core/%.jsonnet.h: stdlib/%.jsonnet
+	(($(OD) -v -Anone -t u1 $< \
+		| tr " " "\n" \
+		| grep -v "^$$" \
+		| tr "\n" "," ) && echo "0") > $@
 	echo >> $@
 
 clean:
-	rm -vf */*~ *~ .*~ */.*.swp .*.swp $(ALL) *.o *.jsonnet.h
+	rm -vf */*~ *~ .*~ */.*.swp .*.swp $(ALL) *.o core/*.jsonnet.h Make.depend
 
 -include Makefile.depend
-
-
-

@@ -19,38 +19,26 @@ limitations under the License.
 
 #include <string>
 
-#include "lexer.h"
 #include "ast.h"
+#include "lexer.h"
+#include "unicode.h"
 
 /** Parse a given JSON++ string.
  *
  * \param alloc Used to allocate the AST nodes.  The Allocator must outlive the
  * AST pointer returned.
- * \param file Used in error messages and embedded in the AST nodes.
- * \param input The string to be tokenized & parsed.
+ * \param tokens The list of tokens (all tokens are popped except EOF).
  * \returns The parsed abstract syntax tree.
  */
-AST *jsonnet_parse(Allocator *alloc, const std::string &file, const char *input);
-
-/** Escapes a string for JSON output.
- */
-std::string jsonnet_unparse_escape(const std::string &str);
+AST *jsonnet_parse(Allocator *alloc, Tokens &tokens);
 
 /** Outputs a number, trying to preserve precision as well as possible.
  */
 std::string jsonnet_unparse_number(double v);
 
-struct BuiltinDecl {
-    std::string name;
-    std::vector<std::string> params;
-};
-
-/** Returns the name of each built-in function. */
-BuiltinDecl jsonnet_builtin_decl(unsigned long builtin);
-
-/** The inverse of jsonnet_parse.  Should also produce valid JSON, if given a
- * restricted AST.
+/** The inverse of jsonnet_parse.
  */
-std::string jsonnet_unparse_jsonnet(const AST *ast);
+std::string jsonnet_unparse_jsonnet(const AST *ast, const Fodder &final_fodder, unsigned indent,
+                                    bool pad_arrays, bool pad_objects, char comment_style);
 
-#endif
+#endif  // JSONNET_PARSER_H

@@ -18,12 +18,68 @@ limitations under the License.
 #define JSONNET_LEXER_H
 
 #include <cstdlib>
+#include <cassert>
+
 #include <iostream>
 #include <string>
 #include <list>
 #include <sstream>
+#include <vector>
 
+#include "unicode.h"
 #include "static_error.h"
+
+/** Whitespace and comments.
+ *
+ * "Fodder" (as in cannon fodder) implies this data is expendable.
+ */
+struct FodderElement {
+    enum Kind {
+        LINE_END,
+        INTERSTITIAL,
+        PARAGRAPH,
+    };
+    Kind kind;
+    unsigned blanks;
+    unsigned indent;
+    std::vector<std::string> comment;
+    FodderElement(Kind kind, unsigned blanks, unsigned indent,
+                  const std::vector<std::string> &comment)
+      : kind(kind), blanks(blanks), indent(indent), comment(comment)
+    {
+        assert(kind != LINE_END || comment.size() <= 1);
+        assert(kind != INTERSTITIAL || (blanks == 0 && indent == 0 && comment.size() == 1));
+        assert(kind != PARAGRAPH || comment.size() >= 1);
+    }
+};
+static inline std::ostream &operator<<(std::ostream &o, const FodderElement &f)
+{
+    switch (f.kind) {
+        case FodderElement::LINE_END:
+        o << "END(" << f.blanks << ", " << f.indent << ", " << f.comment[0] << ")";
+        break;
+        case FodderElement::INTERSTITIAL:
+        o << "INT(" << f.blanks << ", " << f.indent << ", " << f.comment[0] << ")";
+        break;
+        case FodderElement::PARAGRAPH:
+        o << "PAR(" << f.blanks << ", " << f.indent << ", " << f.comment[0] << "...)";
+        break;
+    }
+    return o;
+}
+typedef std::vector<FodderElement> Fodder;
+
+static inline std::ostream &operator<<(std::ostream &o, const Fodder &fodder)
+{
+    bool first = true;
+    for (const auto &f : fodder) {
+        o << (first ? "[" : ", ");
+        first = false;
+        o << f;
+    }
+    o << (first ? "[]" : "]");
+    return o;
+}
 
 struct Token {
     enum Kind {
@@ -32,7 +88,6 @@ struct Token {
         BRACE_R,
         BRACKET_L,
         BRACKET_R,
-        COLON,
         COMMA,
         DOLLAR,
         DOT,
@@ -44,9 +99,12 @@ struct Token {
         IDENTIFIER,
         NUMBER,
         OPERATOR,
-        STRING,
+        STRING_DOUBLE,
+        STRING_SINGLE,
+        STRING_BLOCK,
 
         // Keywords
+        ASSERT,
         ELSE,
         ERROR,
         FALSE,
@@ -68,15 +126,35 @@ struct Token {
         END_OF_FILE
     } kind;
 
+    /** Fodder before this token. */
+    Fodder fodder;
+
+    /** Content of the token if it wasn't a keyword. */
     std::string data;
+
+    /** If kind == STRING_BLOCK then stores the sequence of whitespace that indented the block. */
+    std::string stringBlockIndent;
+
+    /** If kind == STRING_BLOCK then stores the sequence of whitespace that indented the end of
+     * the block.
+     *
+     * This is always fewer whitespace characters than in stringBlockIndent.
+     */
+    std::string stringBlockTermIndent;
+
+    String data32(void) { return decode_utf8(data); }
 
     LocationRange location;
 
-    Token(Kind kind, const std::string &data, const LocationRange &location)
-      : kind(kind), data(data), location(location)
+    Token(Kind kind, const Fodder &fodder, const std::string &data,
+          const std::string &string_block_indent, const std::string &string_block_term_indent,
+          const LocationRange &location)
+      : kind(kind), fodder(fodder), data(data), stringBlockIndent(string_block_indent),
+        stringBlockTermIndent(string_block_term_indent), location(location)
     { }
 
-    Token(Kind kind, const std::string &data="") : kind(kind), data(data) { }
+    Token(Kind kind, const std::string &data="")
+        : kind(kind), data(data) { }
 
     static const char *toString(Kind v)
     {
@@ -85,7 +163,6 @@ struct Token {
             case BRACE_R: return "\"}\"";
             case BRACKET_L: return "\"[\"";
             case BRACKET_R: return "\"]\"";
-            case COLON: return "\":\"";
             case COMMA: return "\",\"";
             case DOLLAR: return "\"$\"";
             case DOT: return "\".\"";
@@ -97,8 +174,11 @@ struct Token {
             case IDENTIFIER: return "IDENTIFIER";
             case NUMBER: return "NUMBER";
             case OPERATOR: return "OPERATOR";
-            case STRING: return "STRING";
+            case STRING_SINGLE: return "STRING_SINGLE";
+            case STRING_DOUBLE: return "STRING_DOUBLE";
+            case STRING_BLOCK: return "STRING_BLOCK";
 
+            case ASSERT: return "assert";
             case ELSE: return "else";
             case ERROR: return "error";
             case FALSE: return "false";
@@ -123,6 +203,13 @@ struct Token {
         }
     }
 };
+
+/** The result of lexing.
+ *
+ * Because of the EOF token, this will always contain at least one token.  So element 0 can be used
+ * to get the filename.
+ */
+typedef std::list<Token> Tokens;
 
 static inline bool operator==(const Token &a, const Token &b)
 {
@@ -149,6 +236,11 @@ static inline std::ostream &operator<<(std::ostream &o, const Token &v)
     return o;
 }
 
-std::list<Token> jsonnet_lex(const std::string &filename, const char *input);
+/** IF the given identifier is a keyword, return its kind, otherwise return IDENTIFIER. */
+Token::Kind lex_get_keyword_kind(const std::string &identifier);
 
-#endif
+Tokens jsonnet_lex(const std::string &filename, const char *input);
+
+std::string jsonnet_unlex(const Tokens &tokens);
+
+#endif  // JSONNET_LEXER_H

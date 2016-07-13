@@ -17,7 +17,6 @@ limitations under the License.
 #include <set>
 
 #include "static_analysis.h"
-
 #include "static_error.h"
 #include "ast.h"
 
@@ -42,12 +41,12 @@ static IdSet static_analysis(AST *ast_, bool in_object, const IdSet &vars)
 
     if (auto *ast = dynamic_cast<const Apply*>(ast_)) {
         append(r, static_analysis(ast->target, in_object, vars));
-        for (AST *arg : ast->arguments)
-            append(r, static_analysis(arg, in_object, vars));
+        for (const auto &arg : ast->args)
+            append(r, static_analysis(arg.expr, in_object, vars));
 
     } else if (auto *ast = dynamic_cast<const Array*>(ast_)) {
-        for (AST *el : ast->elements)
-            append(r, static_analysis(el, in_object, vars));
+        for (auto & el : ast->elements)
+            append(r, static_analysis(el.expr, in_object, vars));
 
     } else if (auto *ast = dynamic_cast<const Binary*>(ast_)) {
         append(r, static_analysis(ast->left, in_object, vars));
@@ -67,16 +66,22 @@ static IdSet static_analysis(AST *ast_, bool in_object, const IdSet &vars)
     } else if (auto *ast = dynamic_cast<const Function*>(ast_)) {
         auto new_vars = vars;
         IdSet params;
-        for (auto *p : ast->parameters) {
-            if (params.find(p) != params.end()) {
-                throw StaticError(ast_->location, "Duplicate function parameter: " + p->name);
+        for (const auto &p : ast->params) {
+            if (params.find(p.id) != params.end()) {
+                std::string msg = "Duplicate function parameter: " + encode_utf8(p.id->name);
+                throw StaticError(ast_->location, msg);
             }
-            params.insert(p);
-            new_vars.insert(p);
+            params.insert(p.id);
+            new_vars.insert(p.id);
         }
+
         auto fv = static_analysis(ast->body, in_object, new_vars);
-        for (auto *p : ast->parameters)
-            fv.erase(p);
+        for (const auto &p : ast->params) {
+            if (p.expr != nullptr)
+                append(fv, static_analysis(p.expr, in_object, new_vars));
+        }
+        for (const auto &p : ast->params)
+            fv.erase(p.id);
         append(r, fv);
 
     } else if (dynamic_cast<const Import*>(ast_)) {
@@ -92,18 +97,19 @@ static IdSet static_analysis(AST *ast_, bool in_object, const IdSet &vars)
     } else if (auto *ast = dynamic_cast<const Local*>(ast_)) {
         IdSet ast_vars;
         for (const auto &bind: ast->binds) {
-            ast_vars.insert(bind.first);
+            ast_vars.insert(bind.var);
         }
         auto new_vars = vars;
         append(new_vars, ast_vars);
         IdSet fvs;
-        for (const auto &bind: ast->binds)
-            append(fvs, static_analysis(bind.second, in_object, new_vars));
+        for (const auto &bind: ast->binds) {
+            append(fvs, static_analysis(bind.body, in_object, new_vars));
+        }
 
         append(fvs, static_analysis(ast->body, in_object, new_vars));
 
         for (const auto &bind: ast->binds)
-            fvs.erase(bind.first);
+            fvs.erase(bind.var);
 
         append(r, fvs);
 
@@ -119,13 +125,16 @@ static IdSet static_analysis(AST *ast_, bool in_object, const IdSet &vars)
     } else if (dynamic_cast<const LiteralNull*>(ast_)) {
         // Nothing to do.
 
-    } else if (auto *ast = dynamic_cast<Object*>(ast_)) {
-        for (auto field : ast->fields) {
+    } else if (auto *ast = dynamic_cast<DesugaredObject*>(ast_)) {
+        for (auto &field : ast->fields) {
             append(r, static_analysis(field.name, in_object, vars));
             append(r, static_analysis(field.body, true, vars));
         }
+        for (AST *assert : ast->asserts) {
+            append(r, static_analysis(assert, true, vars));
+        }
 
-    } else if (auto *ast = dynamic_cast<ObjectComposition*>(ast_)) {
+    } else if (auto *ast = dynamic_cast<ObjectComprehensionSimple*>(ast_)) {
         auto new_vars = vars;
         new_vars.insert(ast->id);
         append(r, static_analysis(ast->field, false, new_vars));
@@ -137,16 +146,17 @@ static IdSet static_analysis(AST *ast_, bool in_object, const IdSet &vars)
         if (!in_object)
             throw StaticError(ast_->location, "Can't use self outside of an object.");
 
-    } else if (dynamic_cast<const Super*>(ast_)) {
+    } else if (auto *ast = dynamic_cast<const SuperIndex*>(ast_)) {
         if (!in_object)
             throw StaticError(ast_->location, "Can't use super outside of an object.");
+        append(r, static_analysis(ast->index, in_object, vars));
 
     } else if (auto *ast = dynamic_cast<const Unary*>(ast_)) {
         append(r, static_analysis(ast->expr, in_object, vars));
 
     } else if (auto *ast = dynamic_cast<const Var*>(ast_)) {
         if (vars.find(ast->id) == vars.end()) {
-            throw StaticError(ast->location, "Unknown variable: "+ast->id->name);
+            throw StaticError(ast->location, "Unknown variable: "+encode_utf8(ast->id->name));
         }
         r.insert(ast->id);
 

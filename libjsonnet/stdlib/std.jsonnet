@@ -26,7 +26,7 @@ limitations under the License.
 
     toString(a)::
         if std.type(a) == "string" then a else "" + a,
-    
+
     substr(str, from, len)::
         if std.type(str) != "string" then
             error "substr first parameter should be a string, got " + std.type(str)
@@ -39,8 +39,33 @@ limitations under the License.
         else
             std.join("", std.makeArray(len, function(i) str[i + from])),
 
+    startsWith(a, b):
+        if std.length(a) < std.length(b) then
+            false
+        else
+            std.substr(a, 0, std.length(b)) == b,
+
+    endsWith(a, b):
+        if std.length(a) < std.length(b) then
+            false
+        else
+            std.substr(a, std.length(a) - std.length(b), std.length(b)) == b,
+
     stringChars(str)::
         std.makeArray(std.length(str), function(i) str[i]),
+    
+    parseInt(str)::
+        local addDigit(aggregate, digit) =
+            if digit < 0 || digit > 9 then
+                error("parseInt got string which does not match regex [0-9]+")
+            else
+                10 * aggregate + digit;
+        local toDigits(str) =
+            [std.codepoint(char) - std.codepoint("0") for char in std.stringChars(str)];
+        if str[0] == "-" then
+            -std.foldl(addDigit, toDigits(str[1:]), 0)
+        else
+            std.foldl(addDigit, toDigits(str), 0),
 
     split(str, c)::
         if std.type(str) != "string" then
@@ -50,12 +75,24 @@ limitations under the License.
         else if std.length(c) != 1 then
             error "std.split second parameter should have length 1, got " + std.length(c)
         else
+            std.splitLimit(str, c, -1),
+
+    splitLimit(str, c, maxsplits)::
+        if std.type(str) != "string" then
+            error "std.splitLimit first parameter should be a string, got " + std.type(str)
+        else if std.type(c) != "string" then
+            error "std.splitLimit second parameter should be a string, got " + std.type(c)
+        else if std.length(c) != 1 then
+            error "std.splitLimit second parameter should have length 1, got " + std.length(c)
+        else if std.type(maxsplits) != "number" then
+            error "std.splitLimit third parameter should be a number, got " + std.type(maxsplits)
+        else
             local aux(str, delim, i, arr, v) =
                 local c = str[i];
                 local i2 = i + 1;
                 if i >= std.length(str) then
                     arr + [v]
-                else if c == delim then
+                else if c == delim && (maxsplits == -1 || std.length(arr) < maxsplits) then
                     aux(str, delim, i2, arr + [v], "") tailstrict
                 else
                     aux(str, delim, i2, arr, v + c) tailstrict;
@@ -63,6 +100,45 @@ limitations under the License.
 
     range(from, to)::
         std.makeArray(to - from + 1, function(i) i + from),
+
+    slice(indexable, index, end, step)::
+        if (index != null && index < 0) || (end != null && end < 0) || (step != null && step < 0) then
+            error("got [%s:%s:%s] but negative index, end, and steps are not supported" % [index, end, step])
+        else if step == 0 then
+            error("got %s but step must be greater than 0" % step)
+        else if std.type(indexable) != "string" && std.type(indexable) != "array" then
+            error("std.slice accepts a string or an array, but got: %s" % std.type(indexable))
+        else
+            local invar =
+                // loop invariant with defaults applied
+                {
+                    indexable: indexable,
+                    index:
+                        if index == null then 0
+                        else index,
+                    end:
+                        if end == null then std.length(indexable)
+                        else end,
+                    step:
+                        if step == null then 1
+                        else step,
+                    length: std.length(indexable),
+                    type: std.type(indexable)
+                };
+            local build(slice, cur) =
+                if cur >= invar.end || cur >= invar.length then
+                    slice
+                else
+                    build(
+                        if invar.type == "string" then
+                            slice + invar.indexable[cur]
+                        else
+                            slice + [ invar.indexable[cur] ],
+                        cur + invar.step
+                    ) tailstrict;
+            build(if invar.type == "string" then "" else [], invar.index),
+
+    count(arr, x):: std.length(std.filter(function(v) v==x, arr)),
 
     mod(a, b)::
         if std.type(a) == "number" && std.type(b) == "number" then
@@ -97,7 +173,7 @@ limitations under the License.
         else if std.type(sep) == "array" then
             aux(arr, 0, true, [])
         else
-            error "join first parameter should be string or array, got " + std.type(arr),
+            error "join first parameter should be string or array, got " + std.type(sep),
 
     lines(arr)::
         std.join("\n", arr + [""]),
@@ -234,7 +310,7 @@ limitations under the License.
                     { i: i + 1, v: "%", caps: false }
                 else
                     error "Unrecognised conversion type: " + c;
-                    
+
 
         // Parsed initial %, now the rest.
         local parse_code(str, i) =
@@ -260,25 +336,18 @@ limitations under the License.
                 };
 
         // Parse a format string (containing none or more % format tags).
-        local parse_codes(str, i, out) = 
+        local parse_codes(str, i, out, cur) =
             if i >= std.length(str) then
-                out
+                out + [cur]
             else
                 local c = str[i];
                 if c == "%" then
                     local r = parse_code(str, i + 1);
-                    parse_codes(str, r.i, out+[r.code])
+                    parse_codes(str, r.i, out + [cur, r.code], "") tailstrict
                 else
-                    local last = out[std.length(out)-1];
-                    local append = std.length(out) > 0 && std.type(last) == "string";
-                    parse_codes(str, i + 1, if append then
-                        std.makeArray(std.length(out),
-                            function(i) if i < std.length(out)-1 then out[i] else last + c)
-                    else
-                        std.makeArray(std.length(out) + 1,
-                            function(i) if i < std.length(out) then out[i] else c));
+                    parse_codes(str, i + 1, out, cur + c) tailstrict;
 
-        local codes = parse_codes(str, 0, []);
+        local codes = parse_codes(str, 0, [], "");
 
 
         ///////////////////////
@@ -452,7 +521,7 @@ limitations under the License.
             else
                 local code = codes[i];
                 if std.type(code) == "string" then
-                    format_codes_arr(codes, arr, i + 1, j, v + code)
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
                 else
                     local tmp = if code.fw == "*" then {
                         j: j + 1,
@@ -490,7 +559,12 @@ limitations under the License.
                             pad_right(s, tmp.fw, " ")
                         else
                             pad_left(s, tmp.fw, " ");
-                    format_codes_arr(codes, arr, i + 1, j2 + 1, v + s_padded);
+                    local j3 =
+                        if code.ctype == "%" then
+                            j2
+                        else
+                            j2 + 1;
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
 
         // Render a parsed format string with an object of values.
         local format_codes_obj(codes, obj, i, v) =
@@ -499,7 +573,7 @@ limitations under the License.
             else
                 local code = codes[i];
                 if std.type(code) == "string" then
-                    format_codes_obj(codes, obj, i + 1, v + code)
+                    format_codes_obj(codes, obj, i + 1, v + code) tailstrict
                 else
                     local f =
                         if code.mkey == null then
@@ -517,10 +591,10 @@ limitations under the License.
                         else
                             code.prec;
                     local val = 
-                        if std.objectHas(obj, f) then
+                        if std.objectHasAll(obj, f) then
                             obj[f]
                         else
-                            error "No such field: " + std.length(f);
+                            error "No such field: " + f;
                     local s =
                         if code.ctype == "%" then
                             "%"
@@ -531,7 +605,7 @@ limitations under the License.
                             pad_right(s, fw, " ")
                         else
                             pad_left(s, fw, " ");
-                    format_codes_obj(codes, obj, i + 1, v + s_padded);
+                    format_codes_obj(codes, obj, i + 1, v + s_padded) tailstrict;
 
         if std.type(vals) == "array" then
             format_codes_arr(codes, vals, 0, 0, "")
@@ -623,18 +697,17 @@ limitations under the License.
                 "\\r"
             else if ch == "\t" then
                 "\\t"
-            else if ch == "\u0000" then
-                "\\u0000"
             else
                 local cp = std.codepoint(ch);
-                if cp < 32 || cp > 126 then
+                if cp < 32 || (cp >= 126 && cp <= 159) then
                     "\\u%04x" % [cp]
                 else
                     ch;
-        "\"%s\"" % std.foldl(function(a, b) a + trans(b), std.stringChars(str), ""),
-    
-    escapeStringPython(str):: std.escapeStringJson(str),
-        
+        "\"%s\"" % std.join("", [trans(ch) for ch in std.stringChars(str)]),
+
+    escapeStringPython(str)::
+        std.escapeStringJson(str),
+
     escapeStringBash(str_)::
         local str = std.toString(str_);
         local trans(ch) =
@@ -642,7 +715,7 @@ limitations under the License.
                 "'\"'\"'"
             else
                 ch;
-        "'%s'" % std.foldl(function(a, b) a + trans(b), std.stringChars(str), ""),
+        "'%s'" % std.join("", [trans(ch) for ch in std.stringChars(str)]),
 
     escapeStringDollars(str_)::
         local str = std.toString(str_);
@@ -652,6 +725,47 @@ limitations under the License.
             else
                 ch;
         std.foldl(function(a, b) a + trans(b), std.stringChars(str), ""),
+
+    manifestJson(value):: std.manifestJsonEx(value, "    "),
+
+    manifestJsonEx(value, indent):: 
+        local aux(v, path, cindent) =
+            if v == true then
+                "true"
+            else if v == false then
+                "false"
+            else if v == null then
+                "null"
+            else if std.type(v) == "number" then
+                "" + v
+            else if std.type(v) == "string" then
+                std.escapeStringJson(v)
+            else if std.type(v) == "function" then
+                error "Tried to manifest function at " + path
+            else if std.type(v) == "array" then
+                local range = std.range(0, std.length(v) - 1);
+                local lines = ["[\n"]
+                              + std.join([",\n"],
+                                         [[cindent + indent + aux(v[i], path + [i], cindent + indent)] for i
+in range])                
+                              + ["\n" + cindent + "]"];
+                std.join("", lines)
+            else if std.type(v) == "object" then
+                local lines = ["{\n"]
+                              + std.join([",\n"],
+                                         [[cindent + indent + "\"" + k + "\": "
+                                           + aux(v[k], path + [k], cindent + indent)]
+                                          for k in std.objectFields(v)])
+                              + ["\n" + cindent + "}"];
+                std.join("", lines);
+        aux(value, [], ""),
+
+    manifestYamlStream(value)::
+        if std.type(value) != "array" then
+            error "manifestYamlStream only takes arrays, got " + std.type(value)
+        else
+            "---\n" + std.join("\n---\n", [std.manifestJson(e) for e in value]) + '\n...\n',
+
 
     manifestPython(o)::
         if std.type(o) == "object" then
@@ -727,8 +841,8 @@ limitations under the License.
         else
             aux(bytes, 0, ""),
 
-    
-    base64DecodeBytes(str):: 
+
+    base64DecodeBytes(str)::
         if std.length(str) % 4 != 0 then
             error "Not a base64 encoded string \"%s\"" % str
         else
@@ -751,7 +865,143 @@ limitations under the License.
 
     base64Decode(str)::
         local bytes = std.base64DecodeBytes(str);
-        std.join("", std.map(function(b) std.char(b), bytes))
+        std.join("", std.map(function(b) std.char(b), bytes)),
 
+    // Quicksort
+    sort(arr)::
+        local l = std.length(arr);
+        if std.length(arr) == 0 then
+            []
+        else
+            local pivot = arr[0];
+            local rest = std.makeArray(l - 1, function(i) arr[i + 1]);
+            local left = std.filter(function(x) x <= pivot, rest);
+            local right = std.filter(function(x) x > pivot, rest);
+            std.sort(left) + [pivot] + std.sort(right),
+
+    uniq(arr)::
+        local f(a, b) =
+            if std.length(a) == 0 then
+                [b]
+            else if a[std.length(a) - 1] == b then
+                a
+            else
+                a + [b];
+        std.foldl(f , arr, []),
+
+    set(arr)::
+        std.uniq(std.sort(arr)),
+
+    setMember(x, arr)::
+        // TODO(dcunnin): Binary chop for O(log n) complexity
+        std.length(std.setInter([x], arr)) > 0,
+
+    setUnion(a, b)::
+        std.set(a + b),
+
+    setInter(a, b)::
+        local aux(a, b, i, j, acc) =
+            if i >= std.length(a) || j >= std.length(b) then
+                acc
+            else
+                if a[i] == b[j] then
+                    aux(a, b, i + 1, j + 1, acc + [a[i]]) tailstrict
+                else if a[i] < b[j] then
+                    aux(a, b, i + 1, j, acc) tailstrict
+                else
+                    aux(a, b, i, j + 1, acc) tailstrict;
+        aux(a, b, 0, 0, []) tailstrict,
+
+    setDiff(a, b)::
+        local aux(a, b, i, j, acc) =
+            if i >= std.length(a) then
+                acc
+            else if j >= std.length(b) then
+                aux(a, b, i + 1, j, acc + [a[i]]) tailstrict
+            else
+                if a[i] == b[j] then
+                    aux(a, b, i + 1, j + 1, acc) tailstrict
+                else if a[i] < b[j] then
+                    aux(a, b, i + 1, j, acc + [a[i]]) tailstrict
+                else
+                    aux(a, b, i, j + 1, acc) tailstrict;
+        aux(a, b, 0, 0, []) tailstrict,
+
+    mergePatch(target, patch)::
+        if std.type(patch) == "object" then
+            local target_object =
+                if std.type(target) == "object" then target else {};
+
+            local target_fields =
+                if std.type(target_object) == "object" then std.objectFields(target_object) else [];
+
+            local null_fields = [k for k in std.objectFields(patch) if patch[k] == null];
+            local both_fields = std.setUnion(target_fields, std.objectFields(patch));
+
+            {
+                [k]:
+                    if !std.objectHas(patch, k) then
+                        target_object[k]
+                    else if !std.objectHas(target_object, k) then
+                        std.mergePatch(null, patch[k]) tailstrict
+                    else
+                        std.mergePatch(target_object[k], patch[k]) tailstrict
+                for k in std.setDiff(both_fields, null_fields)
+            }
+        else
+            patch,
+
+    objectFields(o)::
+        std.objectFieldsEx(o, false),
+
+    objectFieldsAll(o)::
+        std.objectFieldsEx(o, true),
+
+    objectHas(o, f)::
+        std.objectHasEx(o, f, false),
+
+    objectHasAll(o, f)::
+        std.objectHasEx(o, f, true),
+
+    equals(a, b)::
+        local ta = std.type(a);
+        local tb = std.type(b);
+        if !std.primitiveEquals(ta, tb) then
+            false
+        else
+            if std.primitiveEquals(ta, "array") then
+                local la = std.length(a);
+                if !std.primitiveEquals(la, std.length(b)) then
+                    false
+                else
+                    local aux(a, b, i) =
+                        if i >= la then
+                            true
+                        else if a[i] != b[i] then
+                            false
+                        else
+                            aux(a, b, i + 1) tailstrict;
+                    aux(a, b, 0)
+            else if std.primitiveEquals(ta, "object") then
+                local fields = std.objectFields(a);
+                local lfields = std.length(fields);
+                if fields != std.objectFields(b) then
+                    false
+                else
+                    local aux(a, b, i) =
+                        if i >= lfields then
+                            true
+                        else if local f = fields[i]; a[f] != b[f] then
+                            false
+                        else
+                            aux(a, b, i + 1) tailstrict;
+                    aux(a, b, 0)
+            else
+                std.primitiveEquals(a, b),
+
+
+    resolvePath(f, r)::
+        local arr = std.split(f, "/");
+        std.join("/", std.makeArray(std.length(arr)-1, function(i)arr[i]) + [r]),
 
 }
