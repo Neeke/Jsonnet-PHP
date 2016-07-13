@@ -143,20 +143,12 @@ PHP_MINFO_FUNCTION(jsonnet)
 
 PHP_FUNCTION(jsonnet_get_version)
 {
-    zval *str;
-    MAKE_STD_ZVAL(str);
-    ZVAL_STRING(str,JSONNET_PHP_VERSION,1);
-
-    RETURN_STRINGL(Z_STRVAL_P(str), Z_STRLEN_P(str), 0);
+    RETURN_STRINGL(JSONNET_PHP_VERSION, strlen(JSONNET_PHP_VERSION), 1);
 }
 
 PHP_FUNCTION(jsonnet_get_author)
 {
-    zval *str;
-    MAKE_STD_ZVAL(str);
-    ZVAL_STRING(str,JSONNET_PHP_AUTHOR,1);
-
-    RETURN_STRINGL(Z_STRVAL_P(str), Z_STRLEN_P(str), 0);
+    RETURN_STRINGL(JSONNET_PHP_AUTHOR, strlen(JSONNET_PHP_AUTHOR), 1);
 }
 
 PHP_METHOD(JSONNET_RES_NAME, __construct)
@@ -187,9 +179,6 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
         output = jsonnet_evaluate_file(vm, _file_path, &error);
         output_len = strlen(output);
 
-        /**
-         * tihuan
-         */
         if (error) {
             zval *err;
             MAKE_STD_ZVAL(err);
@@ -207,17 +196,13 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
 
         php_url_decode(new_output, new_output_len);
 
-        zval *result;
-        MAKE_STD_ZVAL(result);
-        ZVAL_STRING(result, new_output, 1);
-
         jsonnet_realloc(vm, output, 0);
         jsonnet_destroy(vm);
 
         zval *resultZval;
         MAKE_STD_ZVAL(resultZval);
-        php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
-        zval_dtor(result);
+        php_json_decode(resultZval, new_output, strlen(new_output), 1, 512 TSRMLS_CC);
+
         efree(new_output);
         efree(plus_output);
 
@@ -227,7 +212,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
             return;
         }
 
-        RETURN_ZVAL(resultZval,1,0);
+        RETURN_ZVAL(resultZval,1,1);
     }
 
     zend_throw_exception(php_com_exception_class_entry, "JsonNet::evaluateFile('filePath'), filePath is null", CODE_ERROR TSRMLS_CC);
@@ -268,17 +253,13 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
         char *new_output = php_str_to_str_ex(plus_output, plus_output_len, "\\u00", strlen("\\u00") , "%", 1, &new_output_len, 0, &replace_count);
         php_url_decode(new_output, new_output_len);
 
-        zval *result;
-        MAKE_STD_ZVAL(result);
-        ZVAL_STRING(result, new_output, 1);
-
         jsonnet_realloc(vm, output, 0);
         jsonnet_destroy(vm);
 
         zval *resultZval;
         MAKE_STD_ZVAL(resultZval);
-        php_json_decode(resultZval, Z_STRVAL_P(result), Z_STRLEN_P(result), 1, 512 TSRMLS_CC);
-        zval_dtor(result);
+        php_json_decode(resultZval, new_output, strlen(new_output), 1, 512 TSRMLS_CC);
+
         efree(new_output);
         efree(plus_output);
 
@@ -288,7 +269,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
             return;
         }
 
-        RETURN_ZVAL(resultZval,1,0);
+        RETURN_ZVAL(resultZval,1,1);
 
     }
 
