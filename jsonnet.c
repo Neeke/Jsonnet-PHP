@@ -188,6 +188,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
             jsonnet_destroy(vm);
 
             zend_throw_exception(php_com_exception_class_entry, Z_STRVAL_P(err), CODE_ERROR TSRMLS_CC);
+            zval_ptr_dtor(&err);
             RETURN_FALSE;
         }
 
@@ -207,7 +208,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
         efree(plus_output);
 
         if(Z_TYPE_P(resultZval) == IS_NULL){
-            zval_dtor(resultZval);
+            zval_ptr_dtor(&resultZval);
             zend_throw_exception(php_com_exception_class_entry, "JsonNet #error", CODE_ERROR TSRMLS_CC);
             return;
         }
@@ -246,6 +247,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
             jsonnet_destroy(vm);
 
             zend_throw_exception(php_com_exception_class_entry, Z_STRVAL_P(err), CODE_ERROR TSRMLS_CC);
+            zval_ptr_dtor(&err);
             RETURN_FALSE;
         }
 
@@ -264,7 +266,7 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet)
         efree(plus_output);
 
         if(Z_TYPE_P(resultZval) == IS_NULL){
-            zval_dtor(resultZval);
+            zval_ptr_dtor(&resultZval);
             zend_throw_exception(php_com_exception_class_entry, "JsonNet #error", CODE_ERROR TSRMLS_CC);
             return;
         }
