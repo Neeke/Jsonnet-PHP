@@ -125,7 +125,7 @@ PHP_MINFO_FUNCTION(jsonnet)
     php_info_print_table_row(2, "lib jsonnet Information", LIB_JSONNET_VERSION);
     php_info_print_table_row(2, "Version", JSONNET_PHP_VERSION);
     php_info_print_table_row(2, "Author", JSONNET_PHP_AUTHOR);
-    php_info_print_table_row(2,"Supports", "https://github.com/Neeke/JsonNet");
+    php_info_print_table_row(2,"Supports", "https://github.com/Neeke/Jsonnet-PHP");
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();
