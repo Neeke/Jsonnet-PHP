@@ -206,7 +206,6 @@ PHP_METHOD(JSONNET_RES_NAME, evaluateFile)
         char *new_output = php_str_to_str_ex(plus_output, plus_output_len, "\\u00", strlen("\\u00") , "%", 1, &new_output_len, 0, &replace_count);
 
         php_url_decode(new_output, new_output_len);
-        php_log_err(new_output);
 
         zval *result;
         MAKE_STD_ZVAL(result);
