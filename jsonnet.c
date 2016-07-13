@@ -29,15 +29,6 @@
 #include "php_jsonnet.h"
 #include <stdlib.h>
 
-#ifdef PHP_WIN32
-#include "win32/time.h"
-#elif defined(NETWARE)
-#include <sys/timeval.h>
-#include <sys/time.h>
-#else
-#include <sys/time.h>
-#endif
-
 #include "libjsonnet.h"
 
 
