@@ -121,7 +121,6 @@ jsonnet: cmd/jsonnet.cpp $(LIB_OBJ)
 libjsonnet.so: $(LIB_OBJ)
 	$(CXX) $(LDFLAGS) $(LIB_OBJ) $(SHARED_LDFLAGS) -o $@
 	mkdir -p $(LIB_JSONNET_PATH)
-	mkdir -p $(LIB_JSONNET_PATH)
 	cp -rf include/libjsonnet.h  $(LIB_JSONNET_PATH)
 	cp -rf libjsonnet.so $(LIB_JSONNET_PATH)
 
