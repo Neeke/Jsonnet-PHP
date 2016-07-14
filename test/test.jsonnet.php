@@ -14,33 +14,36 @@ try {
     var_dump(JsonNet::evaluateFile('bar_menu.3.jsonnet'));
     var_dump(JsonNet::evaluateFile('bar_menu.5.jsonnet'));
     var_dump(JsonNet::evaluateFile('bar_menu.6.jsonnet'));
+    var_dump(JsonNet::evaluateFile('utf8.jsonnet'));
 
     $Snippet = '
-    {
-        cocktails: {
-            // Ingredient quantities are in fluid ounces.
-            "Tom Collins": {
-                ingredients: [
-                    { kind: "Farmers Gin", qty: 1.5 },
-                    { kind: "Lemon", qty: 1 },
-                    { kind: "Simple Syrup", qty: 0.5 },
-                    { kind: "Soda", qty: 2 },
-                    { kind: "Angostura", qty: "dash" },
-                ],
-                garnish: "Maraschino Cherry",
-                served: "Tall",
-            },
-            Manhattan: {
-                ingredients: [
-                    { kind: "Rye", qty: 2.5 },
-                    { kind: "Sweet Red Vermouth", qty: 1 },
-                    { kind: "Angostura", qty: "dash" },
-                ],
-                garnish: "Maraschino Cherry",
-                served: "Straight Up",
-            },
-        }
+{
+    cocktails: {
+        "Bee\'s Knees": {
+            // Construct the ingredients by using 4/3 oz
+            // of each element in the given list.
+            ingredients: [  // Array comprehension.
+                { kind: i, qty: 4/3 }
+                for i in ["Honey Syrup", "Lemon Juice", "Farmers Gin"]
+            ],
+            garnish: "Lemon Twist",
+            served: "Straight Up",
+        },
+    } + {  // Object comprehension.
+        [sd.name + "Screwdriver"]: {
+            ingredients: [
+                { kind: "Vodka", qty: 1.5, aa:sd.name },
+                { kind: sd.fruit, qty: 3 },
+            ],
+            garnish: null,
+            served: "On The Rocks"
+        } for sd in [
+            {name: "Yellow ", fruit: "Lemonade"},
+            {name: "汉字", fruit: "Orange Juice"},
+        ]
     }
+}
+
     ';
 
     var_dump(JsonNet::evaluateSnippet($Snippet));
