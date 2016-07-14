@@ -83,6 +83,8 @@ ALL_HEADERS = \
 	include/libjsonnet.h \
 	include/libjsonnet++.h
 
+LIB_JSONNET_PATH = /usr/local/libjsonnet
+
 default: jsonnet
 
 all: $(ALL)
@@ -118,9 +120,9 @@ jsonnet: cmd/jsonnet.cpp $(LIB_OBJ)
 # C binding.
 libjsonnet.so: $(LIB_OBJ)
 	$(CXX) $(LDFLAGS) $(LIB_OBJ) $(SHARED_LDFLAGS) -o $@
-	mkdir -p /usr/lib/jsonnet
-	cp -rf include/libjsonnet.h  /usr/lib/jsonnet
-	cp -rf libjsonnet.so /usr/lib/jsonnet
+	mkdir -p $(LIB_JSONNET_PATH)
+	cp -rf include/libjsonnet.h  $(LIB_JSONNET_PATH)
+	cp -rf libjsonnet.so $(LIB_JSONNET_PATH)
 
 libjsonnet++.so: $(LIB_CPP_OBJ)
 	$(CXX) $(LDFLAGS) $(LIB_CPP_OBJ) $(SHARED_LDFLAGS) -o $@
