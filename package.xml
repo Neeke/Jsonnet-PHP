@@ -16,11 +16,11 @@
         <email>neeke@php.net</email>
         <active>yes</active>
     </lead>
-    <date>2015-05-31</date>
-    <time>17:00:00</time>
+    <date>2016-07-14</date>
+    <time>16:40:00</time>
     <version>
-        <release>1.0.0</release>
-        <api>1.0.0</api>
+        <release>1.1.0</release>
+        <api>1.1.0</api>
     </version>
     <stability>
         <release>stable</release>
@@ -28,7 +28,8 @@
     </stability>
     <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
     <notes>
-        - First version.
+        - Update Lib JsonNet use v0.8.9.
+        - Fixed issue #1 #2, install error and .so load failed.
     </notes>
     <contents>
         <dir name="/">
@@ -48,30 +49,59 @@
                 <file role="src" name="bar_menu.5.jsonnet" />
                 <file role="src" name="bar_menu.6.jsonnet" />
                 <file role="src" name="martinis.jsonnet" />
+                <file role="src" name="utf8.jsonnet" />
                 <file role="src" name="test.jsonnet.php" />
             </dir>
             <dir name="libjsonnet">
-                <file role="src" name="_jsonnet.c"/>
-                <file role="src" name="ast.h"/>
-                <file role="src" name="jsonnet.cpp"/>
-                <file role="src" name="lexer.cpp"/>
-                <file role="src" name="lexer.h"/>
-                <file role="src" name="libjsonnet.cpp"/>
-                <file role="src" name="libjsonnet.h"/>
-                <file role="src" name="libjsonnet_test_file.c"/>
-                <file role="src" name="libjsonnet_test_snippet.c"/>
                 <file role="src" name="LICENSE"/>
                 <file role="src" name="Makefile"/>
-                <file role="src" name="parser.cpp"/>
-                <file role="src" name="parser.h"/>
-                <file role="src" name="README"/>
-                <file role="src" name="state.h"/>
-                <file role="src" name="static_analysis.cpp"/>
-                <file role="src" name="static_analysis.h"/>
-                <file role="src" name="static_error.h"/>
-                <file role="src" name="std.jsonnet"/>
-                <file role="src" name="vm.cpp"/>
-                <file role="src" name="vm.h"/>
+                <file role="src" name="README.md"/>
+                <dir name="stdlib">
+                    <file role="src" name="BUILD"/>
+                    <file role="src" name="std.jsonnet"/>
+                </dir>
+                <dir name="include">
+                    <file role="src" name="BUILD"/>
+                    <file role="src" name="libjsonnet++.h"/>
+                    <file role="src" name="libjsonnet.h"/>
+                </dir>
+                <dir name="cpp">
+                    <file role="src" name="BUILD"/>
+                    <file role="src" name="libjsonnet++.cpp"/>
+                </dir>
+                <dir name="core">
+                    <file role="src" name="BUILD"/>
+                    <file role="src" name="ast.h"/>
+                    <file role="src" name="desugarer.cpp"/>
+                    <file role="src" name="desugarer.h"/>
+                    <file role="src" name="formatter.cpp"/>
+                    <file role="src" name="formatter.h"/>
+                    <file role="src" name="json.h"/>
+                    <file role="src" name="lexer.cpp"/>
+                    <file role="src" name="lexer.h"/>
+                    <file role="src" name="lexer_test.cpp"/>
+                    <file role="src" name="libjsonnet.cpp"/>
+                    <file role="src" name="libjsonnet_test.cpp"/>
+                    <file role="src" name="libjsonnet_test.sh"/>
+                    <file role="src" name="libjsonnet_test_file.c"/>
+                    <file role="src" name="libjsonnet_test_snippet.c"/>
+                    <file role="src" name="parser.cpp"/>
+                    <file role="src" name="parser.h"/>
+                    <file role="src" name="parser_test.cpp"/>
+                    <file role="src" name="state.h"/>
+                    <file role="src" name="static_analysis.cpp"/>
+                    <file role="src" name="static_analysis.h"/>
+                    <file role="src" name="static_error.h"/>
+                    <file role="src" name="string_utils.cpp"/>
+                    <file role="src" name="string_utils.h"/>
+                    <file role="src" name="unicode.h"/>
+                    <file role="src" name="vm.cpp"/>
+                    <file role="src" name="vm.h"/>
+                </dir>
+                <dir name="cmd">
+                    <file role="src" name="BUILD"/>
+                    <file role="src" name="jsonnet.cpp"/>
+                </dir>
             </dir>
         </dir>
     </contents>
