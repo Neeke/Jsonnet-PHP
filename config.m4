@@ -58,7 +58,7 @@ if test "$PHP_JSONNET" != "no"; then
   cd ../
 
   # --with-jsonnet -> check with-path
-  SEARCH_PATH="/usr/local/libjsonnet"
+  SEARCH_PATH="/usr/local/lib"
   SEARCH_FOR="libjsonnet.h"
   if test -r $PHP_JSONNET/$SEARCH_FOR; then # path given as parameter
     JSONNET_DIR=$PHP_JSONNET
