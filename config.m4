@@ -53,9 +53,8 @@ AC_DEFUN([AC_JSONNET_EPOLL],
 ])
 
 if test "$PHP_JSONNET" != "no"; then
-  cd libjsonnet
-  make libjsonnet.so
-  cd ../
+  THIS_DIR=`dirname $0`
+  MAKE_LIB_JSONNET=`cd ${THIS_DIR}/libjsonnet && make libjsonnet.so`
 
   # --with-jsonnet -> check with-path
   SEARCH_PATH="/usr/local/lib"
