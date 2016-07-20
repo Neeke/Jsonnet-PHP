@@ -18,7 +18,7 @@ extern zend_module_entry jsonnet_module_entry;
 #endif
 
 #define JSONNET_RES_NAME                    "JsonNet"
-#define JSONNET_PHP_VERSION                 "v1.1.0"
+#define JSONNET_PHP_VERSION                 "v1.1.1"
 #define JSONNET_PHP_AUTHOR                  "Chitao.Gao  [ neeke@php.net ]"
 
 #define SL_S(s)                             s, sizeof(s) - 1
