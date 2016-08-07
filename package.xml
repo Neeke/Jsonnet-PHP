@@ -16,10 +16,10 @@
         <email>neeke@php.net</email>
         <active>yes</active>
     </lead>
-    <date>2016-07-14</date>
-    <time>16:40:00</time>
+    <date>2016-08-07</date>
+    <time>15:15:00</time>
     <version>
-        <release>1.1.0</release>
+        <release>1.1.1</release>
         <api>1.1.0</api>
     </version>
     <stability>
@@ -28,8 +28,7 @@
     </stability>
     <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
     <notes>
-        - Update Lib JsonNet use v0.8.9.
-        - Fixed issue #1 #2, install error and .so load failed.
+        - Fixed issue #4, pecl install failed.
     </notes>
     <contents>
         <dir name="/">
@@ -132,6 +131,23 @@
             <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
             <notes>
                 - First version.
+            </notes>
+        </release>
+        <release>
+            <date>2016-07-14</date>
+            <time>16:40:00</time>
+            <version>
+                <release>1.1.0</release>
+                <api>1.1.0</api>
+            </version>
+            <stability>
+                <release>stable</release>
+                <api>stable</api>
+            </stability>
+            <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
+            <notes>
+                - Update Lib JsonNet use v0.8.9.
+                - Fixed issue #1 #2, install error and .so load failed.
             </notes>
         </release>
     </changelog>
