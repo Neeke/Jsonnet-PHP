@@ -10,6 +10,7 @@ try {
 
 
     var_dump(JsonNet::evaluateFile('bar_menu.1.jsonnet'));
+    var_dump(JsonNet::fmtFile('bar_menu.1.jsonnet'));
     var_dump(JsonNet::evaluateFile('bar_menu.2.jsonnet'));
     var_dump(JsonNet::evaluateFile('bar_menu.3.jsonnet'));
     var_dump(JsonNet::evaluateFile('bar_menu.5.jsonnet'));
@@ -46,6 +47,7 @@ try {
 
     ';
 
+    var_dump(JsonNet::fmtSnippet($Snippet));
     var_dump(JsonNet::evaluateSnippet($Snippet));
 } catch (Exception $e) {
 

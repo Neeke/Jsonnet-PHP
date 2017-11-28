@@ -17,14 +17,14 @@ extern zend_module_entry jsonnet_module_entry;
 #include "TSRM.h"
 #endif
 
-#define JSONNET_RES_NAME                    "JsonNet"
-#define JSONNET_PHP_VERSION                 "v1.1.1"
-#define JSONNET_PHP_AUTHOR                  "Chitao.Gao  [ neeke@php.net ]"
+#define JSONNET_RES_NAME        "JsonNet"
+#define JSONNET_PHP_VERSION     "v1.2.0"
+#define JSONNET_PHP_AUTHOR      "Chitao.Gao  [ neeke@php.net ]"
 
-#define SL_S(s)                             s, sizeof(s) - 1
+#define SL_S(s)                 s, sizeof(s) - 1
 
-#define CODE_SUCCESS      1000
-#define CODE_ERROR        900
+#define CODE_SUCCESS            1000
+#define CODE_ERROR              900
 
 PHP_MINIT_FUNCTION(jsonnet);
 PHP_MSHUTDOWN_FUNCTION(jsonnet);
@@ -41,6 +41,8 @@ PHP_METHOD(JSONNET_RES_NAME, __construct);
 PHP_METHOD(JSONNET_RES_NAME, __destruct);
 PHP_METHOD(JSONNET_RES_NAME, evaluateFile);
 PHP_METHOD(JSONNET_RES_NAME, evaluateSnippet);
+PHP_METHOD(JSONNET_RES_NAME, fmtFile);
+PHP_METHOD(JSONNET_RES_NAME, fmtSnippet);
 
 ZEND_BEGIN_MODULE_GLOBALS(jsonnet)
 

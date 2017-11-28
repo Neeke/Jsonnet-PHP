@@ -8,6 +8,7 @@ cc_library(
         "lexer.cpp",
         "libjsonnet.cpp",
         "parser.cpp",
+        "pass.cpp",
         "static_analysis.cpp",
         "string_utils.cpp",
         "vm.cpp",
@@ -19,6 +20,7 @@ cc_library(
         "json.h",
         "lexer.h",
         "parser.h",
+        "pass.h",
         "state.h",
         "static_analysis.h",
         "static_error.h",
@@ -29,6 +31,7 @@ cc_library(
     deps = [
         "//include:libjsonnet",
         "//stdlib:std",
+        "//third_party/md5:libmd5",
     ],
     linkopts = ["-lm"],
     includes = ["."],
@@ -40,7 +43,7 @@ cc_test(
     deps = [
         ":libjsonnet",
         # Note: On Ubuntu, apt-get install libgtest-dev google-mock
-        "//external:gtest_main",
+        "//external:googletest_main",
     ],
 )
 
@@ -49,7 +52,7 @@ cc_test(
     srcs = ["parser_test.cpp"],
     deps = [
         ":libjsonnet",
-        "//external:gtest_main",
+        "//external:googletest_main",
     ],
 )
 
@@ -58,6 +61,6 @@ cc_test(
     srcs = ["libjsonnet_test.cpp"],
     deps = [
         ":libjsonnet",
-        "//external:gtest_main",
+        "//external:googletest_main",
     ],
 )
