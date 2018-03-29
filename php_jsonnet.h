@@ -2,6 +2,12 @@
 #ifndef PHP_JSONNET_H
 #define PHP_JSONNET_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "include/Jsonnet.h"
+
 extern zend_module_entry jsonnet_module_entry;
 #define phpext_jsonnet_ptr &jsonnet_module_entry
 
@@ -16,15 +22,6 @@ extern zend_module_entry jsonnet_module_entry;
 #ifdef ZTS
 #include "TSRM.h"
 #endif
-
-#define JSONNET_RES_NAME        "JsonNet"
-#define JSONNET_PHP_VERSION     "v1.2.0"
-#define JSONNET_PHP_AUTHOR      "Chitao.Gao  [ neeke@php.net ]"
-
-#define SL_S(s)                 s, sizeof(s) - 1
-
-#define CODE_SUCCESS            1000
-#define CODE_ERROR              900
 
 PHP_MINIT_FUNCTION(jsonnet);
 PHP_MSHUTDOWN_FUNCTION(jsonnet);
