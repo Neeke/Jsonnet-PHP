@@ -31,15 +31,31 @@ const zend_function_entry jsonnet_functions[] =
     }
 };
 
+ZEND_BEGIN_ARG_INFO_EX(jsonnet_evaluateFile_arginfo, 0, 0, 1)
+ZEND_ARG_INFO(0, file_path)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(jsonnet_evaluateSnippet_arginfo, 0, 0, 1)
+ZEND_ARG_INFO(0, snippet_string)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(jsonnet_fmtFile_arginfo, 0, 0, 1)
+ZEND_ARG_INFO(0, file_path)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(jsonnet_fmtSnippet_arginfo, 0, 0, 1)
+ZEND_ARG_INFO(0, snippet_string)
+ZEND_END_ARG_INFO()
+
 const zend_function_entry jsonnet_methods[] =
 {
     PHP_ME(JSONNET_RES_NAME, __construct,   NULL, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
     PHP_ME(JSONNET_RES_NAME, __destruct,    NULL, ZEND_ACC_PUBLIC | ZEND_ACC_DTOR)
 
-    PHP_ME(JSONNET_RES_NAME, evaluateFile,          NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
-    PHP_ME(JSONNET_RES_NAME, evaluateSnippet,       NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
-    PHP_ME(JSONNET_RES_NAME, fmtFile,               NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
-    PHP_ME(JSONNET_RES_NAME, fmtSnippet,            NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(JSONNET_RES_NAME, evaluateFile,          jsonnet_evaluateFile_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(JSONNET_RES_NAME, evaluateSnippet,       jsonnet_evaluateSnippet_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(JSONNET_RES_NAME, fmtFile,               jsonnet_fmtFile_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(JSONNET_RES_NAME, fmtSnippet,            jsonnet_fmtSnippet_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 
     {
         NULL, NULL, NULL

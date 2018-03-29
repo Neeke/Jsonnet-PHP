@@ -125,3 +125,169 @@ or
     var_dump(JsonNet::evaluateSnippet($Snippet));
 
 ```
+
+### PHP Re Result
+```
+/usr/local/php/php-7.0.6-zts-debug/bin/php --re jsonnet
+
+Extension [ <persistent> extension #40 JsonNet version v1.3.0 ] {
+
+  - Constants [2] {
+    Constant [ string JSONNET_PHP_VERSION ] { v1.3.0 }
+    Constant [ string JSONNET_PHP_AUTHOR ] { Chitao.Gao  [ neeke@php.net ] }
+  }
+
+  - Functions {
+    Function [ <internal:JsonNet> function jsonnet_get_version ] {
+    }
+    Function [ <internal:JsonNet> function jsonnet_get_author ] {
+    }
+  }
+
+  - Classes [1] {
+    Class [ <internal:JsonNet> class JsonNet ] {
+
+      - Constants [0] {
+      }
+
+      - Static properties [0] {
+      }
+
+      - Static methods [4] {
+        Method [ <internal:JsonNet> static public method evaluateFile ] {
+
+          - Parameters [1] {
+            Parameter #0 [ <required> $file_path ]
+          }
+        }
+
+        Method [ <internal:JsonNet> static public method evaluateSnippet ] {
+
+          - Parameters [1] {
+            Parameter #0 [ <required> $snippet_string ]
+          }
+        }
+
+        Method [ <internal:JsonNet> static public method fmtFile ] {
+
+          - Parameters [1] {
+            Parameter #0 [ <required> $file_path ]
+          }
+        }
+
+        Method [ <internal:JsonNet> static public method fmtSnippet ] {
+
+          - Parameters [1] {
+            Parameter #0 [ <required> $snippet_string ]
+          }
+        }
+      }
+
+      - Properties [0] {
+      }
+
+      - Methods [2] {
+        Method [ <internal:JsonNet, ctor> public method __construct ] {
+        }
+
+        Method [ <internal:JsonNet, dtor> public method __destruct ] {
+        }
+      }
+    }
+  }
+}
+```
+
+###CodeTips
+```
+<?php
+/**
+ * @author neeke@php.net
+ * Date: 18/3/29 下午7:51
+ */
+
+const JSONNET_PHP_VERSION = 'v1.3.0';
+const JSONNET_PHP_AUTHOR  = 'neeke@php.net';
+
+const CODE_SUCCESS = 1000;
+const CODE_ERROR   = 900;
+
+/**
+ * @return string
+ */
+function jsonnet_get_version()
+{
+    return JSONNET_PHP_VERSION;
+}
+
+function jsonnet_get_author()
+{
+    return JSONNET_PHP_AUTHOR;
+}
+
+class JsonNet
+{
+    public function __construct()
+    {
+        #JsonNet init
+    }
+
+    public function __destruct()
+    {
+        #JsonNet destroy
+    }
+
+    /**
+     * @param $file_path
+     *
+     * @return array
+     * @throws Exception
+     */
+    static public function evaluateFile($file_path)
+    {
+        throw new Exception('JsonNet::evaluateFile #error', CODE_ERROR);
+
+        return array();
+    }
+
+    /**
+     * @param $snippet_string
+     *
+     * @return array
+     * @throws Exception
+     */
+    static public function evaluateSnippet($snippet_string)
+    {
+        throw new Exception('JsonNet::evaluateSnippet #error', CODE_ERROR);
+
+        return array();
+    }
+
+    /**
+     * @param $file_path
+     *
+     * @return array
+     * @throws Exception
+     */
+    static public function fmtFile($file_path)
+    {
+        throw new Exception('JsonNet::fmtFile #error', CODE_ERROR);
+
+        return array();
+    }
+
+    /**
+     * @param $snippet_string
+     *
+     * @return array
+     * @throws Exception
+     */
+    static public function fmtSnippet($snippet_string)
+    {
+        throw new Exception('JsonNet::fmtSnippet #error', CODE_ERROR);
+
+        return array();
+    }
+
+}
+```

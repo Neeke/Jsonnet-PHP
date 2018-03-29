@@ -56,6 +56,9 @@
                 <file role="src" name="Jsonnet.h"/>
                 <file role="src" name="php7_wrapper.h"/>
             </dir>
+            <dir name="CodeTips">
+                <file role="src" name="JsonNetCodeTips.php"/>
+            </dir>
             <dir name="test">
                 <file role="src" name="bar_menu.1.jsonnet"/>
                 <file role="src" name="bar_menu.2.jsonnet"/>
