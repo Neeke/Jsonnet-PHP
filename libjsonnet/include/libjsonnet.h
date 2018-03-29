@@ -24,7 +24,7 @@ limitations under the License.
  * of using the library.
  */
 
-#define LIB_JSONNET_VERSION "v0.9.5"
+#define LIB_JSONNET_VERSION "v0.10.0"
 
 /** Return the version string of the Jsonnet interpreter.  Conforms to semantic versioning
  * http://semver.org/ If this does not match LIB_JSONNET_VERSION then there is a mismatch between
@@ -271,7 +271,10 @@ char *jsonnet_fmt_snippet(struct JsonnetVm *vm, const char *filename, const char
 /** Set the number of lines of stack trace to display (0 for all of them). */
 void jsonnet_max_trace(struct JsonnetVm *vm, unsigned v);
 
-/** Add to the default import callback's library search path. */
+/** Add to the default import callback's library search path.
+ *
+ * The search order is last to first, so more recently appended paths take precedence.
+ */
 void jsonnet_jpath_add(struct JsonnetVm *vm, const char *v);
 
 /** Evaluate a file containing Jsonnet code, return a JSON string.

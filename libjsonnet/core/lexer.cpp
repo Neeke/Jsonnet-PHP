@@ -26,16 +26,28 @@ limitations under the License.
 
 static const std::vector<std::string> EMPTY;
 
+/** Is the char whitespace (excluding \n). */
+static bool is_horz_ws(char c)
+{
+    return c == ' ' || c == '\t' || c == '\r';
+}
+
+/** Is the char whitespace. */
+static bool is_ws(char c)
+{
+    return c == '\n' || is_horz_ws(c);
+}
+
 /** Strip whitespace from both ends of a string, but only up to margin on the left hand side. */
 static std::string strip_ws(const std::string &s, unsigned margin)
 {
     if (s.size() == 0)
         return s;  // Avoid underflow below.
     size_t i = 0;
-    while (i < s.length() && (s[i] == ' ' || s[i] == '\t' || s[i] == '\r') && i < margin)
+    while (i < s.length() && is_horz_ws(s[i]) && i < margin)
         i++;
     size_t j = s.size();
-    while (j > i && (s[j - 1] == ' ' || s[j - 1] == '\t' || s[j - 1] == '\r')) {
+    while (j > i && is_horz_ws(s[j - 1])) {
         j--;
     }
     return std::string(&s[i], &s[j]);
@@ -67,7 +79,7 @@ static void lex_ws(const char *&c, unsigned &new_lines, unsigned &indent, const 
 {
     indent = 0;
     new_lines = 0;
-    for (; *c != '\0' && (*c == ' ' || *c == '\n' || *c == '\t' || *c == '\r'); c++) {
+    for (; *c != '\0' && is_ws(*c); c++) {
         switch (*c) {
             case '\r':
                 // Ignore.
@@ -100,7 +112,7 @@ static void lex_until_newline(const char *&c, std::string &text, unsigned &blank
     const char *original_c = c;
     const char *last_non_space = c;
     for (; *c != '\0' && *c != '\n'; c++) {
-        if (*c != ' ' && *c != '\t' && *c != '\r')
+        if (!is_horz_ws(*c))
             last_non_space = c;
     }
     text = std::string(original_c, last_non_space - original_c + 1);
@@ -225,7 +237,7 @@ std::string lex_number(const char *&c, const std::string &filename, const Locati
                     case '8':
                     case '9': state = AFTER_ONE_TO_NINE; break;
 
-                    default: throw StaticError(filename, begin, "Couldn't lex number");
+                    default: throw StaticError(filename, begin, "couldn't lex number");
                 }
                 break;
 
@@ -277,7 +289,7 @@ std::string lex_number(const char *&c, const std::string &filename, const Locati
 
                     default: {
                         std::stringstream ss;
-                        ss << "Couldn't lex number, junk after decimal point: " << *c;
+                        ss << "couldn't lex number, junk after decimal point: " << *c;
                         throw StaticError(filename, begin, ss.str());
                     }
                 }
@@ -321,7 +333,7 @@ std::string lex_number(const char *&c, const std::string &filename, const Locati
 
                     default: {
                         std::stringstream ss;
-                        ss << "Couldn't lex number, junk after 'E': " << *c;
+                        ss << "couldn't lex number, junk after 'E': " << *c;
                         throw StaticError(filename, begin, ss.str());
                     }
                 }
@@ -342,7 +354,7 @@ std::string lex_number(const char *&c, const std::string &filename, const Locati
 
                     default: {
                         std::stringstream ss;
-                        ss << "Couldn't lex number, junk after exponent sign: " << *c;
+                        ss << "couldn't lex number, junk after exponent sign: " << *c;
                         throw StaticError(filename, begin, ss.str());
                     }
                 }
@@ -501,7 +513,7 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
                 c++;
                 for (;; ++c) {
                     if (*c == '\0') {
-                        throw StaticError(filename, begin, "Unterminated string");
+                        throw StaticError(filename, begin, "unterminated string");
                     }
                     if (*c == '"') {
                         break;
@@ -526,7 +538,7 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
                 c++;
                 for (;; ++c) {
                     if (*c == '\0') {
-                        throw StaticError(filename, begin, "Unterminated string");
+                        throw StaticError(filename, begin, "unterminated string");
                     }
                     if (*c == '\'') {
                         break;
@@ -556,14 +568,14 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
                 c++;
                 if (*c != '"' && *c != '\'') {
                     std::stringstream ss;
-                    ss << "Couldn't lex verbatim string, junk after '@': " << *c;
+                    ss << "couldn't lex verbatim string, junk after '@': " << *c;
                     throw StaticError(filename, begin, ss.str());
                 }
                 const char quot = *c;
                 c++;  // Advance beyond the opening quote.
                 for (;; ++c) {
                     if (*c == '\0') {
-                        throw StaticError(filename, begin, "Unterminated verbatim string");
+                        throw StaticError(filename, begin, "unterminated verbatim string");
                     }
                     if (*c == quot) {
                         if (*(c + 1) == quot) {
@@ -614,7 +626,7 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
 
                         while (!(*c == '*' && *(c + 1) == '/')) {
                             if (*c == '\0') {
-                                auto msg = "Multi-line comment has no terminating */.";
+                                auto msg = "multi-line comment has no terminating */.";
                                 throw StaticError(filename, begin, msg);
                             }
                             if (*c == '\n') {
@@ -677,12 +689,14 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
 
                     // Text block
                     if (*c == '|' && *(c + 1) == '|' && *(c + 2) == '|') {
-                        if (*(c + 3) != '\n') {
-                            auto msg = "Text block syntax requires new line after |||.";
+                        c += 3;  // Skip the "|||".
+                        while (is_horz_ws(*c)) ++c;  // Chomp whitespace at end of line.
+                        if (*c != '\n') {
+                            auto msg = "text block syntax requires new line after |||.";
                             throw StaticError(filename, begin, msg);
                         }
                         std::stringstream block;
-                        c += 4;  // Skip the "|||\n"
+                        c++;  // Skip the "\n"
                         line_number++;
                         // Skip any blank lines at the beginning of the block.
                         while (*c == '\n') {
@@ -695,7 +709,7 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
                         int ws_chars = whitespace_check(first_line, c);
                         string_block_indent = std::string(first_line, ws_chars);
                         if (ws_chars == 0) {
-                            auto msg = "Text block's first line must start with whitespace.";
+                            auto msg = "text block's first line must start with whitespace.";
                             throw StaticError(filename, begin, msg);
                         }
                         while (true) {
@@ -703,7 +717,7 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
                             // Read up to the \n
                             for (c = &c[ws_chars]; *c != '\n'; ++c) {
                                 if (*c == '\0')
-                                    throw StaticError(filename, begin, "Unexpected EOF");
+                                    throw StaticError(filename, begin, "unexpected EOF");
                                 block << *c;
                             }
                             // Add the \n
@@ -728,7 +742,7 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
                                 }
                                 // Expect |||
                                 if (!(*c == '|' && *(c + 1) == '|' && *(c + 2) == '|')) {
-                                    auto msg = "Text block not terminated with |||";
+                                    auto msg = "text block not terminated with |||";
                                     throw StaticError(filename, begin, msg);
                                 }
                                 c += 3;  // Leave after the last |
@@ -781,7 +795,7 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
         // Ensure that a bug in the above code does not cause an infinite memory consuming loop due
         // to pushing empty tokens.
         if (c == original_c) {
-            throw StaticError(filename, begin, "Internal lexing error:  Pointer did not advance");
+            throw StaticError(filename, begin, "internal lexing error:  pointer did not advance");
         }
 
         Location end(line_number, (c + 1) - line_start);
@@ -795,8 +809,9 @@ Tokens jsonnet_lex(const std::string &filename, const char *input)
         fresh_line = false;
     }
 
+    Location begin(line_number, c - line_start + 1);
     Location end(line_number, (c + 1) - line_start + 1);
-    r.emplace_back(Token::END_OF_FILE, fodder, "", "", "", LocationRange(filename, end, end));
+    r.emplace_back(Token::END_OF_FILE, fodder, "", "", "", LocationRange(filename, begin, end));
     return r;
 }
 

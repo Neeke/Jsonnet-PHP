@@ -484,6 +484,8 @@ class Unparser {
                 if (ast->value.c_str()[0] != U'\n')
                     o << ast->blockIndent;
                 for (const char32_t *cp = ast->value.c_str(); *cp != U'\0'; ++cp) {
+                    // Formatter always outputs in unix mode.
+                    if (*cp == '\r') continue;
                     std::string utf8;
                     encode_utf8(*cp, utf8);
                     o << utf8;
@@ -925,6 +927,9 @@ class PrettyFieldNames : public FmtPass {
 
     bool isIdentifier(const UString &str)
     {
+        // Identifiers cannot be zero-length.
+        if (str.length() == 0) return false;
+
         bool first = true;
         for (char32_t c : str) {
             if (!first && c >= '0' && c <= '9')

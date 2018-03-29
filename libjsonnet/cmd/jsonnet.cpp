@@ -21,13 +21,21 @@ limitations under the License.
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
 extern "C" {
 #include <libjsonnet.h>
 }
+
+#ifdef _WIN32
+const char PATH_SEP = ';';
+#else
+const char PATH_SEP = ':';
+#endif
 
 std::string next_arg(unsigned &i, const std::vector<std::string> &args)
 {
@@ -84,7 +92,7 @@ void usage(std::ostream &o)
     o << "Available eval options:\n";
     o << "  -h / --help             This message\n";
     o << "  -e / --exec             Treat filename as code\n";
-    o << "  -J / --jpath <dir>      Specify an additional library search dir\n";
+    o << "  -J / --jpath <dir>      Specify an additional library search dir (right-most wins)\n";
     o << "  -o / --output-file <file> Write to the output file rather than stdout\n";
     o << "  -m / --multi <dir>      Write multiple files to the directory, list files on stdout\n";
     o << "  -y / --yaml-stream      Write output as a YAML stream of JSON documents\n";
@@ -108,6 +116,12 @@ void usage(std::ostream &o)
     o << "Provide a value as Jsonnet code:\n";
     o << "  --tla-code <var>[=<code>]    If <code> is omitted, get from environment var <var>\n";
     o << "  --tla-code-file <var>=<file> Read the code from the file\n";
+    o << "Environment variables:\n";
+    o << "JSONNET_PATH is a colon (semicolon on Windows) separated list of directories added\n";
+    o << "in reverse order before the paths specified by --jpath (i.e. left-most wins)\n";
+    o << "E.g. JSONNET_PATH=a:b jsonnet -J c -J d is equivalent to:\n";
+    o << "JSONNET_PATH=d:c:a:b jsonnet\n";
+    o << "jsonnet -J b -J a -J c -J d\n";
     o << "\n";
     o << "The fmt command:\n";
     o << "jsonnet fmt {<option>} { <filename> }\n";
@@ -119,14 +133,14 @@ void usage(std::ostream &o)
     o << "  -o / --output-file <file> Write to the output file rather than stdout\n";
     o << "  -i / --in-place         Update the Jsonnet file(s) in place.\n";
     o << "  --test                  Exit with failure if reformatting changed the file(s).\n";
-    o << "  -n / --indent <n>       Number of spaces to indent by (default 0, means no change)\n";
+    o << "  -n / --indent <n>       Number of spaces to indent by (default 2, 0 means no change)\n";
     o << "  --max-blank-lines <n>   Max vertical spacing, 0 means no change (default 2)\n";
-    o << "  --string-style <d|s|l>  Enforce double, single quotes or 'leave' (the default)\n";
-    o << "  --comment-style <h|s|l> # (h)  // (s)  or 'leave' (default) never changes she-bang\n";
+    o << "  --string-style <d|s|l>  Enforce double, single (default) quotes or 'leave'\n";
+    o << "  --comment-style <h|s|l> # (h), // (s)(default), or 'leave'; never changes she-bang\n";
     o << "  --[no-]pretty-field-names Use syntax sugar for fields and indexing (on by default)\n";
     o << "  --[no-]pad-arrays       [ 1, 2, 3 ] instead of [1, 2, 3]\n";
     o << "  --[no-]pad-objects      { x: 1, x: 2 } instead of {x: 1, y: 2} (on by default)\n";
-    o << "  --[no-]sort-imports     Sorting of imports (off by default)\n";
+    o << "  --[no-]sort-imports     Sorting of imports (on by default)\n";
     o << "  --debug-desugaring      Unparse the desugared AST without executing it\n";
     o << "  --version               Print version\n";
     o << "\n";
@@ -145,7 +159,7 @@ long strtol_check(const std::string &str)
     char *ep;
     long r = std::strtol(arg, &ep, 10);
     if (*ep != '\0' || *arg == '\0') {
-        std::cerr << "ERROR: Invalid integer \"" << arg << "\"\n" << std::endl;
+        std::cerr << "ERROR: invalid integer \"" << arg << "\"\n" << std::endl;
         exit(EXIT_FAILURE);
     }
     return r;
@@ -190,7 +204,7 @@ bool get_var_val(const std::string &var_val, std::string &var, std::string &val)
         var = var_val;
         const char *val_cstr = ::getenv(var.c_str());
         if (val_cstr == nullptr) {
-            std::cerr << "ERROR: Environment variable " << var << " was undefined." << std::endl;
+            std::cerr << "ERROR: environment variable " << var << " was undefined." << std::endl;
             return false;
         }
         val = val_cstr;
@@ -201,7 +215,7 @@ bool get_var_val(const std::string &var_val, std::string &var, std::string &val)
     return true;
 }
 
-bool get_var_file(const std::string &var_file, std::string &var, std::string &val)
+bool get_var_file(const std::string &var_file, const std::string &imp, std::string &var, std::string &val)
 {
     size_t eq_pos = var_file.find_first_of('=', 0);
     if (eq_pos == std::string::npos) {
@@ -212,8 +226,14 @@ bool get_var_file(const std::string &var_file, std::string &var, std::string &va
     var = var_file.substr(0, eq_pos);
     const std::string path = var_file.substr(eq_pos + 1, std::string::npos);
 
-    std::ifstream file(path);
-    val = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    size_t b, e;
+    val.erase().append(imp).append(" @'");
+    // duplicate all the single quotes in @path to make a quoted string
+    for (b = 0; (e = path.find("'", b)) != std::string::npos; b = e + 1) {
+        val.append(path.substr(b, e - b + 1)).push_back('\'');
+    }
+    val.append(path.substr(b)).push_back('\'');
+
     return true;
 }
 
@@ -266,7 +286,7 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
             if (arg == "-s" || arg == "--max-stack") {
                 long l = strtol_check(next_arg(i, args));
                 if (l < 1) {
-                    std::cerr << "ERROR: Invalid --max-stack value: " << l << std::endl;
+                    std::cerr << "ERROR: invalid --max-stack value: " << l << std::endl;
                     return ARG_FAILURE;
                 }
                 jsonnet_max_stack(vm, l);
@@ -285,19 +305,51 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
                 if (!get_var_val(next_arg(i, args), var, val))
                     return ARG_FAILURE;
                 jsonnet_ext_var(vm, var.c_str(), val.c_str());
-            } else if (arg == "--ext-str-file") {
+            } else if (arg == "-E" || arg == "--var" || arg == "--env") {
+                // TODO(dcunnin): Delete this in a future release.
+                std::cerr << "WARNING: jsonnet eval -E, --var and --env are deprecated,"
+                          << " please use -V or --ext-str." << std::endl;
                 std::string var, val;
-                if (!get_var_file(next_arg(i, args), var, val))
+                if (!get_var_val(next_arg(i, args), var, val))
                     return ARG_FAILURE;
                 jsonnet_ext_var(vm, var.c_str(), val.c_str());
+            } else if (arg == "--ext-str-file") {
+                std::string var, val;
+                if (!get_var_file(next_arg(i, args), "importstr", var, val))
+                    return ARG_FAILURE;
+                jsonnet_ext_code(vm, var.c_str(), val.c_str());
+            } else if (arg == "-F" || arg == "--file") {
+                // TODO(dcunnin): Delete this in a future release.
+                std::cerr << "WARNING: jsonnet eval -F and --file are deprecated,"
+                          << " please use --ext-str-file." << std::endl;
+                std::string var, val;
+                if (!get_var_file(next_arg(i, args), "importstr", var, val))
+                    return ARG_FAILURE;
+                jsonnet_ext_code(vm, var.c_str(), val.c_str());
             } else if (arg == "--ext-code") {
+                std::string var, val;
+                if (!get_var_val(next_arg(i, args), var, val))
+                    return ARG_FAILURE;
+                jsonnet_ext_code(vm, var.c_str(), val.c_str());
+            } else if (arg == "--code-var" || arg == "--code-env") {
+                // TODO(dcunnin): Delete this in a future release.
+                std::cerr << "WARNING: jsonnet eval --code-var and --code-env are deprecated,"
+                          << " please use --ext-code." << std::endl;
                 std::string var, val;
                 if (!get_var_val(next_arg(i, args), var, val))
                     return ARG_FAILURE;
                 jsonnet_ext_code(vm, var.c_str(), val.c_str());
             } else if (arg == "--ext-code-file") {
                 std::string var, val;
-                if (!get_var_file(next_arg(i, args), var, val))
+                if (!get_var_file(next_arg(i, args), "import", var, val))
+                    return ARG_FAILURE;
+                jsonnet_ext_code(vm, var.c_str(), val.c_str());
+            } else if (arg == "--code-file") {
+                // TODO(dcunnin): Delete this in a future release.
+                std::cerr << "WARNING: jsonnet eval --code-file is deprecated,"
+                          << " please use --ext-code-file." << std::endl;
+                std::string var, val;
+                if (!get_var_file(next_arg(i, args), "import", var, val))
                     return ARG_FAILURE;
                 jsonnet_ext_code(vm, var.c_str(), val.c_str());
             } else if (arg == "-A" || arg == "--tla-str") {
@@ -307,9 +359,9 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
                 jsonnet_tla_var(vm, var.c_str(), val.c_str());
             } else if (arg == "--tla-str-file") {
                 std::string var, val;
-                if (!get_var_file(next_arg(i, args), var, val))
+                if (!get_var_file(next_arg(i, args), "importstr", var, val))
                     return ARG_FAILURE;
-                jsonnet_tla_var(vm, var.c_str(), val.c_str());
+                jsonnet_tla_code(vm, var.c_str(), val.c_str());
             } else if (arg == "--tla-code") {
                 std::string var, val;
                 if (!get_var_val(next_arg(i, args), var, val))
@@ -317,21 +369,21 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
                 jsonnet_tla_code(vm, var.c_str(), val.c_str());
             } else if (arg == "--tla-code-file") {
                 std::string var, val;
-                if (!get_var_file(next_arg(i, args), var, val))
+                if (!get_var_file(next_arg(i, args), "import", var, val))
                     return ARG_FAILURE;
                 jsonnet_tla_code(vm, var.c_str(), val.c_str());
 
             } else if (arg == "--gc-min-objects") {
                 long l = strtol_check(next_arg(i, args));
                 if (l < 0) {
-                    std::cerr << "ERROR: Invalid --gc-min-objects value: " << l << std::endl;
+                    std::cerr << "ERROR: invalid --gc-min-objects value: " << l << std::endl;
                     return ARG_FAILURE;
                 }
                 jsonnet_gc_min_objects(vm, l);
             } else if (arg == "-t" || arg == "--max-trace") {
                 long l = strtol_check(next_arg(i, args));
                 if (l < 0) {
-                    std::cerr << "ERROR: Invalid --max-trace value: " << l << std::endl;
+                    std::cerr << "ERROR: invalid --max-trace value: " << l << std::endl;
                     return ARG_FAILURE;
                 }
                 jsonnet_max_trace(vm, l);
@@ -340,11 +392,11 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
                 char *ep;
                 double v = std::strtod(arg, &ep);
                 if (*ep != '\0' || *arg == '\0') {
-                    std::cerr << "ERROR: Invalid number \"" << arg << "\"" << std::endl;
+                    std::cerr << "ERROR: invalid number \"" << arg << "\"" << std::endl;
                     return ARG_FAILURE;
                 }
                 if (v < 0) {
-                    std::cerr << "ERROR: Invalid --gc-growth-trigger \"" << arg << "\""
+                    std::cerr << "ERROR: invalid --gc-growth-trigger \"" << arg << "\""
                               << std::endl;
                     return ARG_FAILURE;
                 }
@@ -365,7 +417,7 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
             } else if (arg == "-S" || arg == "--string") {
                 jsonnet_string_output(vm, 1);
             } else if (arg.length() > 1 && arg[0] == '-') {
-                std::cerr << "ERROR: Unrecognized argument: " << arg << std::endl;
+                std::cerr << "ERROR: unrecognized argument: " << arg << std::endl;
                 return ARG_FAILURE;
             } else {
                 remaining_args.push_back(args[i]);
@@ -380,14 +432,14 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
             } else if (arg == "-n" || arg == "--indent") {
                 long l = strtol_check(next_arg(i, args));
                 if (l < 0) {
-                    std::cerr << "ERROR: Invalid --indent value: " << l << std::endl;
+                    std::cerr << "ERROR: invalid --indent value: " << l << std::endl;
                     return ARG_FAILURE;
                 }
                 jsonnet_fmt_indent(vm, l);
             } else if (arg == "--max-blank-lines") {
                 long l = strtol_check(next_arg(i, args));
                 if (l < 0) {
-                    std::cerr << "ERROR: Invalid --max-blank-lines value: " << l << ""
+                    std::cerr << "ERROR: invalid --max-blank-lines value: " << l << ""
                               << std::endl;
                     return ARG_FAILURE;
                 }
@@ -401,7 +453,7 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
                 } else if (val == "l") {
                     jsonnet_fmt_comment(vm, 'l');
                 } else {
-                    std::cerr << "ERROR: Invalid --comment-style value: " << val
+                    std::cerr << "ERROR: invalid --comment-style value: " << val
                               << std::endl;
                     return ARG_FAILURE;
                 }
@@ -414,7 +466,7 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
                 } else if (val == "l") {
                     jsonnet_fmt_string(vm, 'l');
                 } else {
-                    std::cerr << "ERROR: Invalid --string-style value: " << val
+                    std::cerr << "ERROR: invalid --string-style value: " << val
                               << std::endl;
                     return ARG_FAILURE;
                 }
@@ -437,7 +489,7 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
             } else if (arg == "--debug-desugaring") {
                 jsonnet_fmt_debug_desugaring(vm, true);
             } else if (arg.length() > 1 && arg[0] == '-') {
-                std::cerr << "ERROR: Unrecognized argument: " << arg << std::endl;
+                std::cerr << "ERROR: unrecognized argument: " << arg << std::endl;
                 return ARG_FAILURE;
             } else {
                 remaining_args.push_back(args[i]);
@@ -447,7 +499,7 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
 
     const char *want = config->filenameIsCode ? "code" : "filename";
     if (remaining_args.size() == 0) {
-        std::cerr << "ERROR: Must give " << want << "\n" << std::endl;
+        std::cerr << "ERROR: must give " << want << "\n" << std::endl;
         usage(std::cerr);
         return ARG_FAILURE;
     }
@@ -456,7 +508,7 @@ static ArgStatus process_args(int argc, const char **argv, JsonnetConfig *config
     if (!multiple_files_allowed) {
         if (remaining_args.size() > 1) {
             std::string filename = remaining_args[0];
-            std::cerr << "ERROR: Only one " << want << " is allowed\n" << std::endl;
+            std::cerr << "ERROR: only one " << want << " is allowed\n" << std::endl;
             return ARG_FAILURE;
         }
     }
@@ -691,6 +743,17 @@ int main(int argc, const char **argv)
     try {
         JsonnetVm *vm = jsonnet_make();
         JsonnetConfig config;
+        if (const char *jsonnet_path_env = getenv("JSONNET_PATH")) {
+            std::list<std::string> jpath;
+            std::istringstream iss(jsonnet_path_env);
+            std::string path;
+            while (std::getline(iss, path, PATH_SEP)) {
+                jpath.push_front(path);
+            }
+            for (const std::string &path : jpath) {
+                jsonnet_jpath_add(vm, path.c_str());
+            }
+        }
         ArgStatus arg_status = process_args(argc, argv, &config, vm);
         if (arg_status != ARG_CONTINUE) {
             jsonnet_destroy(vm);
@@ -761,12 +824,12 @@ int main(int argc, const char **argv)
                             output_file = inputFile;
 
                             if (inputFile == "-") {
-                                std::cerr << "ERROR: Cannot use --in-place with stdin" << std::endl;
+                                std::cerr << "ERROR: cannot use --in-place with stdin" << std::endl;
                                 jsonnet_destroy(vm);
                                 return EXIT_FAILURE;
                             }
                             if (config.filenameIsCode) {
-                                std::cerr << "ERROR: Cannot use --in-place with --exec"
+                                std::cerr << "ERROR: cannot use --in-place with --exec"
                                           << std::endl;
                                 jsonnet_destroy(vm);
                                 return EXIT_FAILURE;
