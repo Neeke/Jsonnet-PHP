@@ -1,6 +1,6 @@
 /*
   +----------------------------------------------------------------------+
-  | JsonNet                                                              |
+  | Jsonnet                                                              |
   +----------------------------------------------------------------------+
   | This source file is subject to version 2.0 of the Apache license,    |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -27,8 +27,8 @@
 #include "Zend/zend_exceptions.h"
 #include "php7_wrapper.h"
 
-#define JSONNET_RES_NAME        "JsonNet"
-#define JSONNET_PHP_VERSION     "v1.3.0"
+#define JSONNET_RES_NAME        "Jsonnet"
+#define JSONNET_PHP_VERSION     "v1.3.1"
 #define JSONNET_PHP_AUTHOR      "Chitao.Gao  [ neeke@php.net ]"
 
 #define SL_S(s)                 s, sizeof(s) - 1

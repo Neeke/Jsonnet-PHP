@@ -9,13 +9,13 @@ try {
     var_dump(jsonnet_get_author());
 
 
-    var_dump(JsonNet::evaluateFile('bar_menu.1.jsonnet'));
-    var_dump(JsonNet::fmtFile('bar_menu.1.jsonnet'));
-    var_dump(JsonNet::evaluateFile('bar_menu.2.jsonnet'));
-    var_dump(JsonNet::evaluateFile('bar_menu.3.jsonnet'));
-    var_dump(JsonNet::evaluateFile('bar_menu.5.jsonnet'));
-    var_dump(JsonNet::evaluateFile('bar_menu.6.jsonnet'));
-    var_dump(JsonNet::evaluateFile('utf8.jsonnet'));
+    var_dump(Jsonnet::evaluateFile('bar_menu.1.jsonnet'));
+    var_dump(Jsonnet::fmtFile('bar_menu.1.jsonnet'));
+    var_dump(Jsonnet::evaluateFile('bar_menu.2.jsonnet'));
+    var_dump(Jsonnet::evaluateFile('bar_menu.3.jsonnet'));
+    var_dump(Jsonnet::evaluateFile('bar_menu.5.jsonnet'));
+    var_dump(Jsonnet::evaluateFile('bar_menu.6.jsonnet'));
+    var_dump(Jsonnet::evaluateFile('utf8.jsonnet'));
 
     $Snippet = '
 {
@@ -47,8 +47,8 @@ try {
 
     ';
 
-    var_dump(JsonNet::fmtSnippet($Snippet));
-    var_dump(JsonNet::evaluateSnippet($Snippet));
+    var_dump(Jsonnet::fmtSnippet($Snippet));
+    var_dump(Jsonnet::evaluateSnippet($Snippet));
 } catch (Exception $e) {
 
     var_dump($e->getCode());

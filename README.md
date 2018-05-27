@@ -137,10 +137,10 @@ var_dump(Jsonnet::evaluateSnippet($Snippet));
 ```
 /usr/local/php/php-7.0.6-zts-debug/bin/php --re jsonnet
 
-Extension [ <persistent> extension #40 Jsonnet version v1.3.0 ] {
+Extension [ <persistent> extension #40 Jsonnet version v1.3.1 ] {
 
   - Constants [2] {
-    Constant [ string JSONNET_PHP_VERSION ] { v1.3.0 }
+    Constant [ string JSONNET_PHP_VERSION ] { v1.3.1 }
     Constant [ string JSONNET_PHP_AUTHOR ] { Chitao.Gao  [ neeke@php.net ] }
   }
 

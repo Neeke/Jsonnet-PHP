@@ -2,11 +2,11 @@
 <package packagerversion="1.9.4" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0"
          xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
-    <name>JsonNet</name>
+    <name>Jsonnet</name>
     <channel>pecl.php.net</channel>
-    <summary>The Google JsonNet for PHP.</summary>
+    <summary>The Google Jsonnet for PHP.</summary>
     <description>
-        The Google JsonNet for PHP.
+        The Google Jsonnet for PHP.
 
         Jsonnet language, from its most basic features to its powerful object model, punctuated with examples drawn from
         the world of cocktails. These examples are meant to be fun, and although a little contrived, do not restrict our
@@ -38,7 +38,7 @@
     </stability>
     <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
     <notes>
-        - Update Lib JsonNet use v0.10.0.
+        - Update Lib Jsonnet use v0.10.0.
         - Support PHP 7.
     </notes>
     <contents>
@@ -57,7 +57,7 @@
                 <file role="src" name="php7_wrapper.h"/>
             </dir>
             <dir name="CodeTips">
-                <file role="src" name="JsonNetCodeTips.php"/>
+                <file role="src" name="JsonnetCodeTips.php"/>
             </dir>
             <dir name="test">
                 <file role="src" name="bar_menu.1.jsonnet"/>
@@ -175,7 +175,7 @@
             </stability>
             <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
             <notes>
-                - Update Lib JsonNet use v0.8.9.
+                - Update Lib Jsonnet use v0.8.9.
                 - Fixed issue #1 #2, install error and .so load failed.
             </notes>
         </release>
@@ -208,9 +208,9 @@
             </stability>
             <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
             <notes>
-                - Update Lib JsonNet use v0.9.5.
-                - Add function JsonNet::fmtFile.
-                - Add function JsonNet::fmtSnippet.
+                - Update Lib Jsonnet use v0.9.5.
+                - Add function Jsonnet::fmtFile.
+                - Add function Jsonnet::fmtSnippet.
             </notes>
         </release>
     </changelog>
