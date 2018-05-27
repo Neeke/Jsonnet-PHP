@@ -26,11 +26,11 @@
         <email>neeke@php.net</email>
         <active>yes</active>
     </lead>
-    <date>2018-03-29</date>
-    <time>19:19:00</time>
+    <date>2018-05-27</date>
+    <time>18:49:00</time>
     <version>
-        <release>1.3.0</release>
-        <api>1.3.0</api>
+        <release>1.3.1</release>
+        <api>1.3.1</api>
     </version>
     <stability>
         <release>stable</release>
@@ -38,8 +38,8 @@
     </stability>
     <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
     <notes>
-        - Update Lib Jsonnet use v0.10.0.
-        - Support PHP 7.
+        - Merged formatting cleanups for README from google.
+        - Rename class from JsonNet to Jsonnet.
     </notes>
     <contents>
         <dir name="/">
@@ -211,6 +211,23 @@
                 - Update Lib Jsonnet use v0.9.5.
                 - Add function Jsonnet::fmtFile.
                 - Add function Jsonnet::fmtSnippet.
+            </notes>
+        </release>
+        <release>
+            <date>2018-03-29</date>
+            <time>19:19:00</time>
+            <version>
+                <release>1.3.0</release>
+                <api>1.3.0</api>
+            </version>
+            <stability>
+                <release>stable</release>
+                <api>stable</api>
+            </stability>
+            <license uri="http://www.apache.org/licenses/LICENSE-2.0.html">Apache2.0</license>
+            <notes>
+                - Update Lib Jsonnet use v0.10.0.
+                - Support PHP 7.
             </notes>
         </release>
     </changelog>
