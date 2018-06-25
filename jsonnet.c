@@ -17,7 +17,6 @@
 #include "php_jsonnet.h"
 #include "libjsonnet.h"
 
-
 ZEND_DECLARE_MODULE_GLOBALS(jsonnet)
 
 static int le_jsonnet;
@@ -62,10 +61,16 @@ const zend_function_entry jsonnet_methods[] =
     }
 };
 
+const zend_module_dep jsonnet_deps[] = {
+    ZEND_MOD_REQUIRED("json")
+    ZEND_MOD_END
+};
+
 zend_module_entry jsonnet_module_entry =
 {
 #if ZEND_MODULE_API_NO >= 20010901
-    STANDARD_MODULE_HEADER,
+    STANDARD_MODULE_HEADER_EX, NULL,
+    jsonnet_deps,
 #endif
     JSONNET_RES_NAME,
     jsonnet_functions,
@@ -93,7 +98,6 @@ static void php_jsonnet_init_globals(zend_jsonnet_globals *jsonnet_globals)
 {
 
 }
-
 
 PHP_MINIT_FUNCTION(jsonnet)
 {
